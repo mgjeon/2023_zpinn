@@ -5,4 +5,8 @@ d = { 'settings': { 'branch': 'main',
                 'doc_host': '',
                 'git_url': 'https://github.com/mgjeon/zpinn',
                 'lib_path': 'zpinn'},
-  'syms': {'zpinn.ode': {'zpinn.ode.F': ('ode.html#f', 'zpinn/ode.py')}}}
+  'syms': { 'zpinn.ode': { 'zpinn.ode.draw_bvp_solution_y_yp': ('ode.html#draw_bvp_solution_y_yp', 'zpinn/ode.py'),
+                           'zpinn.ode.draw_solution_y_with_exact_y': ('ode.html#draw_solution_y_with_exact_y', 'zpinn/ode.py'),
+                           'zpinn.ode.draw_solution_y_yp': ('ode.html#draw_solution_y_yp', 'zpinn/ode.py'),
+                           'zpinn.ode.solve_and_draw_solution_y_with_exact_y': ( 'ode.html#solve_and_draw_solution_y_with_exact_y',
+                                                                                 'zpinn/ode.py')}}}
