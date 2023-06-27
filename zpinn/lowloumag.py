@@ -156,6 +156,10 @@ def add_magnetic_field_to_grid(self):
     vectors[:, 1] = self.By
     vectors[:, 2] = self.Bz
     self.grid['B'] = vectors
+    self.grid.active_vectors_name = 'B'
+    magnitude = np.linalg.norm(vectors, axis=-1)
+    self.grid['mag'] = magnitude
+    self.grid.active_scalars_name = 'mag'
     self.grid['alpha'] = self.alpha
 
 # %% ../nbs/03_lowlou_mag_func.ipynb 39
