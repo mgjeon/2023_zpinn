@@ -3,3 +3,10 @@ website:
     contents:
       - index.ipynb
       - 00_ode.ipynb
+      - 01_lowlou_ODE.ipynb
+      - 02_lowlou_mag.ipynb
+      - 03_lowlou_mag_func.ipynb
+      - 04_lowlou_mag_plot.ipynb
+      - 05_PINN_NF2.ipynb
+      - 06_PINN_NF2_class.ipynb
+      - 07_PINN_NF2 (latest).ipynb
