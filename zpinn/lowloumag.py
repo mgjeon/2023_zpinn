@@ -173,3 +173,4 @@ def calculate(self):
     self.calculate_local_Cartesian_magnetic_fields()
     self.calculate_physical_magnetic_fields()
     self.add_magnetic_field_to_grid()
+    return self.grid

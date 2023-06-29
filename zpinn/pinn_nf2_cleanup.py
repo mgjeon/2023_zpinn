@@ -5,11 +5,16 @@ __all__ = ['create_coordinates', 'BoundaryDataset', 'PotentialModel', 'prepare_b
 
 # %% ../nbs/05_PINN_NF2_cleanup.ipynb 3
 import numpy as np
+import pickle
 from zpinn.lowloumag import LowLouMag
 
 # %% ../nbs/05_PINN_NF2_cleanup.ipynb 4
-b = LowLouMag(resolutions=[128, 64, 200])
+b = LowLouMag(resolutions=[64, 64, 64])
 b.calculate()
+
+with open("b.pickle","wb") as f:
+    pickle.dump(b, f)
+
 Nx, Ny, _ =  b.grid.dimensions
 bottom_subset = (0, Nx-1, 0, Ny-1, 0, 0)
 bottom = b.grid.extract_subset(bottom_subset).extract_surface()
@@ -78,6 +83,16 @@ def prepare_bc_data(b_bottom, height, b_norm, spatial_norm):
     bottom_bounds = (0, Nx-1, 0, Ny-1, 0, 0)
     bottom_coords = create_coordinates(bottom_bounds).reshape(-1, 3)
 
+    norms = {}
+    if b_norm is None:
+        bottom_values_abs_max = np.max([np.abs(np.max(bottom_values)), np.abs(np.min(bottom_values))])
+        b_norm = int(bottom_values_abs_max)
+        norms['b_norm'] = b_norm
+    if spatial_norm is None:
+        bottom_coords_max = np.max([np.abs(np.max(bottom_coords)), np.abs(np.min(bottom_coords))])
+        spatial_norm = int(bottom_coords_max)
+        norms['spatial_norm'] = spatial_norm
+
     top_bounds = (0, Nx-1, 0, Ny-1, Nz-1, Nz-1)
     lateral_bounds_1 = (0, 0, 0, Ny-1, 0, Nz-1)
     lateral_bounds_2 = (Nx-1, Nx-1, 0, Ny-1, 0, Nz-1)
@@ -124,7 +139,8 @@ def prepare_bc_data(b_bottom, height, b_norm, spatial_norm):
 
     boundary_data = np.stack([normalized_boundary_coords, normalized_boundary_values], 1)
 
-    return boundary_data
+    return boundary_data, norms
+
 
 # %% ../nbs/05_PINN_NF2_cleanup.ipynb 13
 class BModel(nn.Module):
@@ -145,7 +161,7 @@ class BModel(nn.Module):
 
 # %% ../nbs/05_PINN_NF2_cleanup.ipynb 14
 class NF2Trainer:
-    def __init__(self, base_path, b_bottom, height, b_norm, spatial_norm, meta_info=None):
+    def __init__(self, base_path, b_bottom, height, b_norm=None, spatial_norm=None, meta_info=None):
         self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
         
         # meta info
@@ -158,10 +174,16 @@ class NF2Trainer:
         # prepare boundary points + values
         self.b_bottom = b_bottom
         self.height = height
+        
         self.b_norm = b_norm
         self.spatial_norm = spatial_norm
-        self.boundary_data = prepare_bc_data(self.b_bottom, self.height, self.b_norm, self.spatial_norm)
-                             
+        self.boundary_data, norms = prepare_bc_data(self.b_bottom, self.height, self.b_norm, self.spatial_norm)
+
+        if self.b_norm is None:
+            self.b_norm = norms['b_norm']
+        if self.spatial_norm is None:
+            self.spatial_norm = norms['spatial_norm']
+        
         # prepare collocation points
         Nx, Ny, _ = self.b_bottom.shape
         Nz = self.height
@@ -172,7 +194,8 @@ class NF2Trainer:
         self.normalized_collocation_coords = torch.tensor(normalized_collocation_coords)  
 
     def setup(self, total_iterations=50000, batch_size=10000, log_interval=100, num_workers=None,
-              num_neurons=256, num_layers=8, w_ff=1, w_div=1, w_bc_init=1000, decay_iterations=None):
+              num_neurons=256, num_layers=8, w_ff=1, w_div=1, w_bc_init=1000, decay_iterations=None,
+              transfer_learning_path=None):
         device = self.device
                         
         self.total_iterations = total_iterations
@@ -195,14 +218,32 @@ class NF2Trainer:
             self.w_bc_decay = (1 / w_bc_init) ** (1 / decay_iterations)
         else:
             self.w_bc_decay = 1
-    
+
+        self.required_iteration = self.total_iterations
+        self.start_iteration = 0
+        if transfer_learning_path is None:          
+            checkpoint_path = os.path.join(self.base_path, 'checkpoint.pt')
+            if os.path.exists(checkpoint_path):
+                state_dict = torch.load(checkpoint_path, map_location=device)
+                self.start_iteration = state_dict['iteration']
+                self.model.load_state_dict(state_dict['m'])
+                self.opt.load_state_dict(state_dict['o'])
+                self.w_bc = state_dict['w_bc']
+                print("Resuming training from iteration %d" % self.start_iteration)
+                self.required_iteration = self.required_iteration - self.start_iteration
+        else:
+            state_dict = torch.load(transfer_learning_path, map_location=device)
+            self.model.load_state_dict(state_dict['m'])
+            self.opt.load_state_dict(state_dict['o'])
+            print(f"Load {transfer_learning_path}")
+
     def train(self):
         device = self.device
-        
-        boundary_data_loader, boundary_batches_path = self.create_boundary_batches()
+
+        boundary_data_loader, boundary_batches_path = self.create_boundary_batches(self.required_iteration)
         
         self.model.train()
-        for iter, (boundary_coords, boundary_b) in tqdm(enumerate(boundary_data_loader, start=0),
+        for iter, (boundary_coords, boundary_b) in tqdm(enumerate(boundary_data_loader, start=self.start_iteration),
                                                         total=len(boundary_data_loader), desc='Training'):
             # PDE loss
             perm = torch.randperm(self.normalized_collocation_coords.shape[0])
@@ -224,8 +265,8 @@ class NF2Trainer:
 
             # save initial state
             if iter == 0:
-                self.print_log(iter-1)
-                self.save(iter-1)
+                self.print_log(iter)
+                self.save(iter)
 
             self.opt.zero_grad()
             self.loss.backward()
@@ -234,9 +275,9 @@ class NF2Trainer:
 
             # save checkpoint state
             if (self.log_interval > 0 and (iter + 1) % self.log_interval == 0):
-                self.print_log(iter)
-                self.save(iter)
-                self.save_state_dict('checkpoint.pt')
+                self.print_log(iter+1)
+                self.save(iter+1)
+                self.save_state_dict(iter+1, 'checkpoint.pt')
 
             # update training parameters
             if self.w_bc > 1:
@@ -247,16 +288,15 @@ class NF2Trainer:
                 self.scheduler.step()
 
         # save final model state
-        self.print_log(self.total_iterations-1)
-        self.save(self.total_iterations-1)
-        self.save_state_dict('model_final.pt')
+        self.print_log(self.total_iterations)
+        self.save(self.total_iterations)
+        self.save_state_dict(self.total_iterations, 'model_final.pt')
         # cleanup
-        os.remove(batches_path)    
+        os.remove(boundary_batches_path)    
 
-    def create_boundary_batches(self):
+    def create_boundary_batches(self, required_iterations):
         boundary_data = self.boundary_data
         batch_size = self.batch_size
-        total_iterations = self.total_iterations
         num_workers = self.num_workers
         
         # shuffle data
@@ -278,7 +318,7 @@ class NF2Trainer:
         boundary_dataset = BoundaryDataset(boundary_batches_path)
         # create loader
         boundary_data_loader = DataLoader(boundary_dataset, batch_size=None, num_workers=num_workers, pin_memory=True,
-                                 sampler=RandomSampler(boundary_dataset, replacement=True, num_samples=total_iterations))
+                                 sampler=RandomSampler(boundary_dataset, replacement=True, num_samples=required_iterations))
         return boundary_data_loader, boundary_batches_path
 
     def PDEloss(self, B, r):
@@ -315,8 +355,7 @@ class NF2Trainer:
         return loss_ff, loss_div
         
     def save(self, iteration):
-        iternum = iteration+1
-        torch.save({'iteration': iternum,
+        torch.save({'iteration': iteration,
                     'model': self.model,
                     'cube_shape': self.cube_shape,
                     'b_norm': self.b_norm,
@@ -328,17 +367,18 @@ class NF2Trainer:
                     'loss_ff': self.loss_ff.detach().cpu().numpy(),
                     'w_ff': self.w_ff,
                     'LR':self.scheduler.get_last_lr()[0]}, 
-                    os.path.join(self.base_path, 'model_%06d.pt' % iternum))
+                    os.path.join(self.base_path, 'model_%06d.pt' % iteration))
         
-    def save_state_dict(self, filename):
-        torch.save({'m': self.model.state_dict(),
+    def save_state_dict(self, iteration, filename):
+        torch.save({'iteration': iteration,
+                    'w_bc': self.w_bc,
+                    'm': self.model.state_dict(),
                     'o': self.opt.state_dict()},
                     os.path.join(self.base_path, filename))
 
     def print_log(self, iteration):
-        iternum = iteration+1
         print('[Iteration %06d/%06d] [loss: %.08f] [loss_bc: %.08f; loss_div: %.08f; loss_ff: %.08f] [w_bc: %f, LR: %f]' %
-                (iternum, self.total_iterations,
+                (iteration, self.total_iterations,
                 self.loss,
                 self.w_bc*self.loss_bc,
                 self.w_ff*self.loss_ff,
