@@ -349,8 +349,9 @@ class NF2Trainer:
 
         loss_ff = torch.sum(JxB**2, dim=-1) / (torch.sum(B**2, dim=-1) + 1e-7)
         loss_ff = torch.mean(loss_ff)
-        loss_div = torch.sum((divB)**2, dim=-1)
-        loss_div = torch.mean(loss_div)
+        # loss_div = torch.sum((divB)**2, dim=-1)
+        # loss_div = torch.mean(loss_div)
+        loss_div = torch.mean((divB)**2)
 
         return loss_ff, loss_div
         

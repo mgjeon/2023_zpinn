@@ -78,7 +78,7 @@ class pinn_cube:
 import copy
 import matplotlib.pyplot as plt
 
-# %% ../nbs/06_PINN_NF2_visualization.ipynb 13
+# %% ../nbs/06_PINN_NF2_visualization.ipynb 14
 class draw_grid:
     def __init__(self, grd):
         grid = copy.deepcopy(grd)
@@ -151,5 +151,9 @@ class draw_grid:
                                                  integration_direction='both')
         
         p.add_mesh(strl.tube(radius=i_size/400), cmap='bwr', ambient=0.2)
+
+        sargs = dict(title="B_z")
+        ctr = self.bottom.contour(scalars=self.bottom['B'][:, 2])
+        p.add_mesh(ctr, cmap='plasma', scalar_bar_args=sargs)
         p.show()
 

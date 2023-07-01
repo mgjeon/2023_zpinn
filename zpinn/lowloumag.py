@@ -164,6 +164,15 @@ def add_magnetic_field_to_grid(self):
 
 # %% ../nbs/03_lowlou_mag_func.ipynb 39
 @patch_to(LowLouMag)
+def create_bottom_boundary(self):
+    Nx, Ny, _ =  self.grid.dimensions
+    bottom_subset = (0, Nx-1, 0, Ny-1, 0, 0)
+    self.bottom = self.grid.extract_subset(bottom_subset).extract_surface()
+    self.b_bottom = self.bottom['B'].reshape(Nx, Ny, 3)
+    self.b_bottom = np.array(self.b_bottom)
+
+# %% ../nbs/03_lowlou_mag_func.ipynb 40
+@patch_to(LowLouMag)
 def calculate(self):
     self.create_physical_coordinates()
     self.calculate_local_Cartesian_coordinates()
@@ -173,4 +182,5 @@ def calculate(self):
     self.calculate_local_Cartesian_magnetic_fields()
     self.calculate_physical_magnetic_fields()
     self.add_magnetic_field_to_grid()
+    self.create_bottom_boundary()
     return self.grid
