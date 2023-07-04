@@ -57,7 +57,7 @@ class get_potential_field:
             p_batch = model(r)
             b_p = -1 * torch.autograd.grad(p_batch, r, torch.ones_like(p_batch), retain_graph=True, create_graph=True)[0]
             cube += [b_p.clone().detach().cpu()]
-        cube = torch.concatenate(cube)
+        cube = torch.cat(cube)
         B = cube.numpy()
                                 
         Bx = B[:, 0]

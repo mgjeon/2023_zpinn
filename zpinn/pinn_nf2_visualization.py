@@ -20,7 +20,7 @@ def create_physical_coordinates(bounds, resolutions):
     z_spacing = np.diff(z_1D)[0]
     spacing = (x_spacing, y_spacing, z_spacing)
     origin = (x_1D[0], y_1D[0], z_1D[0]) # The bottom left corner of the data set
-    grid = pv.UniformGrid(dimensions=resolutions, spacing=spacing, origin=origin)
+    grid = pv.ImageData(dimensions=resolutions, spacing=spacing, origin=origin)
     return grid
 
 # %% ../nbs/06_PINN_NF2_visualization.ipynb 6
@@ -54,7 +54,7 @@ class pinn_cube:
             batch_coords = normalized_domain_coords[k*batch_size : (k+1)*batch_size]
             batch_coords.to(device)
             cube += [model(batch_coords).detach().cpu()]
-        cube = torch.concatenate(cube)
+        cube = torch.cat(cube)
         B = cube.numpy()*b_norm
         
         Bx = B[:, 0]

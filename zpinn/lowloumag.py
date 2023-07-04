@@ -46,7 +46,7 @@ def create_physical_coordinates(self):
     z_spacing = np.diff(z_1D)[0]
     spacing = (x_spacing, y_spacing, z_spacing)
     origin = (x_1D[0], y_1D[0], z_1D[0]) # The bottom left corner of the data set
-    self.grid = pv.UniformGrid(dimensions=self.resolutions, spacing=spacing, origin=origin)
+    self.grid = pv.ImageData(dimensions=self.resolutions, spacing=spacing, origin=origin)
     return self.grid
 
 # %% ../nbs/03_lowlou_mag_func.ipynb 14
