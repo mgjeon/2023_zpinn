@@ -68,6 +68,8 @@ class PotentialModel(nn.Module):
         potential = torch.sum(numerator/denominator, 0) / (2*np.pi)
         return potential
 
+
+# %% ../nbs/05_PINN_NF2_cleanup.ipynb 16
 def prepare_bc_data(b_bottom, height, b_norm, spatial_norm):
     Nx, Ny, _ = b_bottom.shape
     Nz = height
@@ -135,7 +137,7 @@ def prepare_bc_data(b_bottom, height, b_norm, spatial_norm):
     return boundary_data, norms
 
 
-# %% ../nbs/05_PINN_NF2_cleanup.ipynb 16
+# %% ../nbs/05_PINN_NF2_cleanup.ipynb 17
 class BModel(nn.Module):
     def __init__(self, num_inputs, num_outputs, num_neurons, num_layers):
         super().__init__()
@@ -152,7 +154,7 @@ class BModel(nn.Module):
         B = self.d_out(x)
         return B
 
-# %% ../nbs/05_PINN_NF2_cleanup.ipynb 17
+# %% ../nbs/05_PINN_NF2_cleanup.ipynb 18
 class NF2Trainer:
     def __init__(self, base_path, b_bottom, height, b_norm=None, spatial_norm=None, meta_info=None):
         self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')

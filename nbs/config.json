@@ -2,6 +2,13 @@
     "nx": 64,
     "ny": 64,
     "nz": 64,
+    "n":1, 
+    "m":1,
+    "l":0.3, 
+    "Phi": "np.pi/2",
     "b_norm": 100,
-    "res_path": "spinn"
+    "spatial_norm": 32,
+    "input": "input",
+    "output_spinn": "output_spinn",
+    "output_pinn": "output_pinn"
 }
