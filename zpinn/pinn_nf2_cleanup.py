@@ -22,12 +22,10 @@ from torch.utils.data import Dataset, DataLoader, TensorDataset, RandomSampler
 from tqdm import tqdm
 from datetime import datetime
 import os
-os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= "3"
 import json
 import logging
 
-# %% ../nbs/05_PINN_NF2_cleanup.ipynb 13
+# %% ../nbs/05_PINN_NF2_cleanup.ipynb 14
 def create_coordinates(bounds):
     xbounds = (bounds[0], bounds[1])
     ybounds = (bounds[2], bounds[3])
@@ -35,7 +33,7 @@ def create_coordinates(bounds):
     meshgrid = np.mgrid[xbounds[0]:xbounds[1]+1, ybounds[0]:ybounds[1]+1, zbounds[0]:zbounds[1]+1]
     return np.stack(meshgrid, axis=-1).astype(np.float32)
 
-# %% ../nbs/05_PINN_NF2_cleanup.ipynb 14
+# %% ../nbs/05_PINN_NF2_cleanup.ipynb 15
 class BoundaryDataset(Dataset):
 
     def __init__(self, batches_path):
@@ -51,7 +49,7 @@ class BoundaryDataset(Dataset):
         coord, field = d[:, 0],  d[:, 1]
         return coord, field
 
-# %% ../nbs/05_PINN_NF2_cleanup.ipynb 15
+# %% ../nbs/05_PINN_NF2_cleanup.ipynb 16
 class PotentialModel(nn.Module):
 
     def __init__(self, b_n, r_p):
@@ -69,7 +67,7 @@ class PotentialModel(nn.Module):
         return potential
 
 
-# %% ../nbs/05_PINN_NF2_cleanup.ipynb 16
+# %% ../nbs/05_PINN_NF2_cleanup.ipynb 17
 def prepare_bc_data(b_bottom, height, b_norm, spatial_norm):
     Nx, Ny, _ = b_bottom.shape
     Nz = height
@@ -137,7 +135,7 @@ def prepare_bc_data(b_bottom, height, b_norm, spatial_norm):
     return boundary_data, norms
 
 
-# %% ../nbs/05_PINN_NF2_cleanup.ipynb 17
+# %% ../nbs/05_PINN_NF2_cleanup.ipynb 18
 class BModel(nn.Module):
     def __init__(self, num_inputs, num_outputs, num_neurons, num_layers):
         super().__init__()
@@ -154,7 +152,7 @@ class BModel(nn.Module):
         B = self.d_out(x)
         return B
 
-# %% ../nbs/05_PINN_NF2_cleanup.ipynb 18
+# %% ../nbs/05_PINN_NF2_cleanup.ipynb 19
 class NF2Trainer:
     def __init__(self, base_path, b_bottom, height, b_norm=None, spatial_norm=None, meta_info=None):
         self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')

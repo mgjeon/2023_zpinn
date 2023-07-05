@@ -8,7 +8,7 @@
     "Phi": "np.pi/2",
     "b_norm": 100,
     "spatial_norm": 32,
-    "input": "input",
+    "input_path": "input",
     "output_spinn": "output_spinn",
     "output_pinn": "output_pinn"
 }
