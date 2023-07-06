@@ -4,13 +4,14 @@
 __all__ = ['create_physical_coordinates', 'pinn_cube', 'draw_grid']
 
 # %% ../nbs/06_PINN_NF2_visualization.ipynb 3
+import os
 import torch
 import numpy as np
 import pyvista as pv
 from tqdm import tqdm
 from .pinn_nf2_cleanup import BModel, create_coordinates
 
-# %% ../nbs/06_PINN_NF2_visualization.ipynb 5
+# %% ../nbs/06_PINN_NF2_visualization.ipynb 6
 def create_physical_coordinates(bounds, resolutions):
     x_1D = np.linspace(bounds[0], bounds[1], resolutions[0])
     y_1D = np.linspace(bounds[2], bounds[3], resolutions[1])
@@ -23,7 +24,7 @@ def create_physical_coordinates(bounds, resolutions):
     grid = pv.ImageData(dimensions=resolutions, spacing=spacing, origin=origin)
     return grid
 
-# %% ../nbs/06_PINN_NF2_visualization.ipynb 6
+# %% ../nbs/06_PINN_NF2_visualization.ipynb 7
 class pinn_cube:
     def __init__(self, save_path):
         self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -74,11 +75,11 @@ class pinn_cube:
         self.grid = grid
         return self.grid
 
-# %% ../nbs/06_PINN_NF2_visualization.ipynb 11
+# %% ../nbs/06_PINN_NF2_visualization.ipynb 12
 import copy
 import matplotlib.pyplot as plt
 
-# %% ../nbs/06_PINN_NF2_visualization.ipynb 14
+# %% ../nbs/06_PINN_NF2_visualization.ipynb 15
 class draw_grid:
     def __init__(self, grd):
         grid = copy.deepcopy(grd)
@@ -108,6 +109,13 @@ class draw_grid:
         ax.clabel(CS, fontsize=9, inline=True)
         ax.set_title(r"$B_z(z=0)$")
         plt.show()
+
+    def k3d_bottom(self):
+        p = pv.Plotter()
+        p.show_bounds()
+        p.add_mesh(self.grid.outline())
+        p.add_mesh(self.bottom)
+        p.show()
 
     def pv_bottom(self):
         p = pv.Plotter()

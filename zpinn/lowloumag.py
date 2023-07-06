@@ -113,8 +113,8 @@ def calculate_local_spherical_magnetic_fields(self):
     A = r**(-n) * P
     dA_dtheta = -r**(-n) * np.sin(theta) * dP
     dA_dr = -n*r**(-n-1) * P
-    # Q = np.sqrt(a2) * A ** (1 + 1 / n)
-    Q = np.sqrt(a2) * A * np.abs(A)**(1/n)
+    Q = np.sqrt(a2) * A ** (1 + 1 / n)
+    # Q = np.sqrt(a2) * A * np.abs(A)**(1/n)
     
     alpha = np.sqrt(a2) * (1 + 1/n) * A**(1/n)
     
