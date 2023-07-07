@@ -76,15 +76,15 @@ def prepare_bc_data(b_bottom, height, b_norm, spatial_norm):
     bottom_bounds = (0, Nx-1, 0, Ny-1, 0, 0)
     bottom_coords = create_coordinates(bottom_bounds).reshape(-1, 3)
 
-    norms = {}
-    if b_norm is None:
-        bottom_values_abs_max = np.max([np.abs(np.max(bottom_values)), np.abs(np.min(bottom_values))])
-        b_norm = int(bottom_values_abs_max)
-        norms['b_norm'] = b_norm
-    if spatial_norm is None:
-        bottom_coords_max = np.max([np.abs(np.max(bottom_coords)), np.abs(np.min(bottom_coords))])
-        spatial_norm = int(bottom_coords_max)
-        norms['spatial_norm'] = spatial_norm
+    # norms = {}
+    # if b_norm is None:
+    #     bottom_values_abs_max = np.max([np.abs(np.max(bottom_values)), np.abs(np.min(bottom_values))])
+    #     b_norm = int(bottom_values_abs_max)
+    #     norms['b_norm'] = b_norm
+    # if spatial_norm is None:
+    #     bottom_coords_max = np.max([np.abs(np.max(bottom_coords)), np.abs(np.min(bottom_coords))])
+    #     spatial_norm = int(bottom_coords_max)
+    #     norms['spatial_norm'] = spatial_norm
 
     top_bounds = (0, Nx-1, 0, Ny-1, Nz-1, Nz-1)
     lateral_bounds_1 = (0, 0, 0, Ny-1, 0, Nz-1)
@@ -132,7 +132,7 @@ def prepare_bc_data(b_bottom, height, b_norm, spatial_norm):
 
     boundary_data = np.stack([normalized_boundary_coords, normalized_boundary_values], 1)
 
-    return boundary_data, norms
+    return boundary_data
 
 
 # %% ../nbs/05_PINN_NF2_cleanup.ipynb 18
@@ -154,7 +154,7 @@ class BModel(nn.Module):
 
 # %% ../nbs/05_PINN_NF2_cleanup.ipynb 19
 class NF2Trainer:
-    def __init__(self, base_path, b_bottom, height, b_norm=None, spatial_norm=None, meta_info=None):
+    def __init__(self, base_path, b_bottom, height, b_norm=None, spatial_norm=None, meta_info=None, boundary_data=None):
         self.device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
         
         # meta info
@@ -170,7 +170,10 @@ class NF2Trainer:
         
         self.b_norm = b_norm
         self.spatial_norm = spatial_norm
-        self.boundary_data, norms = prepare_bc_data(self.b_bottom, self.height, self.b_norm, self.spatial_norm)
+        if boundary_data is None:
+            self.boundary_data = prepare_bc_data(self.b_bottom, self.height, self.b_norm, self.spatial_norm)
+        else:
+            self.boundary_data = boundary_data
 
         if self.b_norm is None:
             self.b_norm = norms['b_norm']
