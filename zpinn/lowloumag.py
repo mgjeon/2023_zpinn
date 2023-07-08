@@ -16,13 +16,15 @@ class LowLouMag:
                  bounds=[-1,1,-1,1,0,2],
                  resolutions=[64,64,64],
                  n=1, m=1,
-                 l=0.3, Phi=np.pi/2):
+                 l=0.3, Phi=np.pi/2,
+                 abs=False):
         self.bounds = bounds
         self.resolutions = resolutions
         self.n = n
         self.m = m
         self.l = l
         self.Phi = Phi
+        self.abs = abs
     def __str__(self): 
         return (
             "### Low and Lou (1990) NLFFF\n"
@@ -113,8 +115,10 @@ def calculate_local_spherical_magnetic_fields(self):
     A = r**(-n) * P
     dA_dtheta = -r**(-n) * np.sin(theta) * dP
     dA_dr = -n*r**(-n-1) * P
-    Q = np.sqrt(a2) * A ** (1 + 1 / n)
-    # Q = np.sqrt(a2) * A * np.abs(A)**(1/n)
+    if self.abs is True:
+        Q = np.sqrt(a2) * A * np.abs(A)**(1/n)
+    else:
+        Q = np.sqrt(a2) * A ** (1 + 1 / n)
     
     alpha = np.sqrt(a2) * (1 + 1/n) * A**(1/n)
     
