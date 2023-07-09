@@ -7,3 +7,6 @@
 *.npy
 *.pt
 **egg-info/
+*.vtk
+*.fits
+**/build

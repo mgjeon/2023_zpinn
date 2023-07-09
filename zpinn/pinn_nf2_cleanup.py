@@ -191,7 +191,7 @@ class NF2Trainer:
 
     def setup(self, total_iterations=50000, batch_size=10000, log_interval=100, num_workers=None,
               num_neurons=256, num_layers=8, w_ff=1, w_div=1, w_bc_init=1000, decay_iterations=None,
-              transfer_learning_path=None):
+              transfer_learning_path=None, lr_init=5e-4, lr_final=5e-5, lr_decay_iterations=None):
         device = self.device
                         
         self.total_iterations = total_iterations
@@ -203,8 +203,10 @@ class NF2Trainer:
         device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
         # self.model = nn.DataParallel(BModel(3, 3, num_layers)).to(device)
         self.model = nn.DataParallel(BModel(3, 3, num_neurons, num_layers)).to(device)
-        self.opt = torch.optim.Adam(self.model.parameters(), lr=5e-4)
-        self.scheduler = ExponentialLR(self.opt, gamma=(5e-5 / 5e-4) ** (1 / total_iterations))
+        self.opt = torch.optim.Adam(self.model.parameters(), lr=lr_init)
+        if lr_decay_iterations is None:
+            lr_decay_iterations = total_iterations
+        self.scheduler = ExponentialLR(self.opt, gamma=(lr_final / lr_init) ** (1 / lr_decay_iterations))
 
         # loss weights
         self.w_ff = w_ff

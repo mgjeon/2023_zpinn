@@ -188,3 +188,15 @@ def calculate(self):
     self.add_magnetic_field_to_grid()
     self.create_bottom_boundary()
     return self.grid
+
+# %% ../nbs/03_lowlou_mag_func.ipynb 41
+@patch_to(LowLouMag)
+def calculate_nogrid(self):
+    self.create_physical_coordinates()
+    self.calculate_local_Cartesian_coordinates()
+    self.calculate_local_spherical_coordinates()
+    self.calculate_eigenfunctions()
+    self.calculate_local_spherical_magnetic_fields()
+    self.calculate_local_Cartesian_magnetic_fields()
+    self.calculate_physical_magnetic_fields()
+    return np.stack([self.Bx, self.By, self.Bz], axis=-1)

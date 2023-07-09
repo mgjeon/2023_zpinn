@@ -87,6 +87,9 @@ class draw_grid:
         x_ind_min, y_ind_min, z_ind_min = 0, 0, 0
         Nx, Ny, Nz = self.grid.dimensions
         x_ind_max, y_ind_max, z_ind_max = Nx-1, Ny-1, Nz-1
+
+        self.x_ind_min, self.y_ind_min, self.z_ind_min = x_ind_min, y_ind_min, z_ind_min
+        self.x_ind_max, self.y_ind_max, self.z_ind_max = x_ind_max, y_ind_max, z_ind_max
         
         bottom_subset = (x_ind_min, x_ind_max, y_ind_min, y_ind_max, 0, 0)
         bottom = self.grid.extract_subset(bottom_subset).extract_surface()
@@ -99,6 +102,9 @@ class draw_grid:
         self.y_bottom = bottom.points[:, 1].reshape(Nx, Ny)
         self.B_bottom = bottom['B'].reshape(Nx, Ny, 3)
 
+        B = self.grid['B'].reshape(Nz, Ny, Nx, 3)
+        self.B = B.transpose(2, 1, 0, 3)
+
     def plt_Bz(self):
         plt.close()
         fig, ax = plt.subplots(figsize=(6,6))
@@ -109,6 +115,7 @@ class draw_grid:
         ax.clabel(CS, fontsize=9, inline=True)
         ax.set_title(r"$B_z(z=0)$")
         plt.show()
+    
 
     def k3d_bottom(self):
         p = pv.Plotter()
@@ -165,3 +172,55 @@ class draw_grid:
         p.add_mesh(ctr, cmap='plasma', scalar_bar_args=sargs)
         p.show()
 
+    def pv_streamline_Bz(self, camera_position=None, i_resolution=10, j_resolution=10, vmin=-2000, vmax=2000):
+        p = pv.Plotter()
+        p.show_bounds()
+        p.add_mesh(self.grid.outline())
+        sargs_B = dict(
+            title='Bz [G]',
+            title_font_size=15,
+            height=0.25,
+            width=0.05,
+            vertical=True,
+            position_x = 0.05,
+            position_y = 0.05,
+        )
+        dargs_B = dict(
+            scalars='B', 
+            component=2, 
+            clim=(vmin, vmax), 
+            scalar_bar_args=sargs_B, 
+            show_scalar_bar=False, 
+            lighting=False
+        )
+        p.add_mesh(self.bottom, cmap='gray', **dargs_B)
+
+        i_size = self.grid.bounds[1]-self.grid.bounds[0]
+        j_size = self.grid.bounds[3]-self.grid.bounds[2]
+        seed = pv.Plane(center=(self.grid.center[0], self.grid.center[1], 0), direction=(0,0,1), 
+                i_size=i_size, j_size=j_size, 
+                i_resolution=i_resolution, j_resolution=j_resolution)
+        # p.add_mesh(seed)
+        strl = self.grid.streamlines_from_source(seed,
+                                                 vectors='B',
+                                                 max_time=180,
+                                                 initial_step_length=0.1,
+                                                 integration_direction='both')
+        
+        p.add_mesh(strl.tube(radius=i_size/400), cmap='bwr', ambient=0.2)
+        if camera_position is not None:
+             p.camera_position = camera_position
+        p.show()
+
+    def plt_Bz_imshow(self, z=0, vmin=None, vmax=None):         
+        plt.close()
+        fig, ax = plt.subplots(figsize=(6,6))
+        if (vmin is not None) and (vmax is not None):
+            CS = plt.imshow(self.B[:, :, z, 2].transpose(), origin='lower', cmap='gray', vmin=vmin, vmax=vmax)
+        else:
+            CS = plt.imshow(self.B[:, :, z, 2].transpose(), origin='lower', cmap='gray')
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_title(f"B_z(z={z})")
+        fig.colorbar(CS)
+        plt.show()
