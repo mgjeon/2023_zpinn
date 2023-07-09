@@ -172,7 +172,7 @@ class draw_grid:
         p.add_mesh(ctr, cmap='plasma', scalar_bar_args=sargs)
         p.show()
 
-    def pv_streamline_Bz(self, camera_position=None, i_resolution=10, j_resolution=10, vmin=-2000, vmax=2000):
+    def pv_streamline_Bz(self, camera_position=None, i_siz=None, j_siz=None, i_resolution=10, j_resolution=10, vmin=-2000, vmax=2000):
         p = pv.Plotter()
         p.show_bounds()
         p.add_mesh(self.grid.outline())
@@ -195,8 +195,12 @@ class draw_grid:
         )
         p.add_mesh(self.bottom, cmap='gray', **dargs_B)
 
-        i_size = self.grid.bounds[1]-self.grid.bounds[0]
-        j_size = self.grid.bounds[3]-self.grid.bounds[2]
+        if (i_siz is not None) and (j_siz is not None):
+            i_size = i_siz
+            j_size = j_siz
+        else:
+            i_size = self.grid.bounds[1]-self.grid.bounds[0]
+            j_size = self.grid.bounds[3]-self.grid.bounds[2]
         seed = pv.Plane(center=(self.grid.center[0], self.grid.center[1], 0), direction=(0,0,1), 
                 i_size=i_size, j_size=j_size, 
                 i_resolution=i_resolution, j_resolution=j_resolution)
