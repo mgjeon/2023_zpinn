@@ -190,7 +190,7 @@ class draw_grid:
             component=2, 
             clim=(vmin, vmax), 
             scalar_bar_args=sargs_B, 
-            show_scalar_bar=False, 
+            show_scalar_bar=True, 
             lighting=False
         )
         p.add_mesh(self.bottom, cmap='gray', **dargs_B)
@@ -211,7 +211,9 @@ class draw_grid:
                                                  initial_step_length=0.1,
                                                  integration_direction='both')
         
-        p.add_mesh(strl.tube(radius=i_size/400), cmap='bwr', ambient=0.2)
+        p.add_mesh(strl.tube(radius=i_size/400), 
+                   lighting=False,
+                   color='blue')
         if camera_position is not None:
              p.camera_position = camera_position
         p.show()
