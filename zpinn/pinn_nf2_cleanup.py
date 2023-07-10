@@ -240,6 +240,8 @@ class NF2Trainer:
 
         boundary_data_loader, boundary_batches_path = self.create_boundary_batches(self.required_iteration)
         
+        losses = []
+        losses_no_weight = []
         self.model.train()
         for iter, (boundary_coords, boundary_b) in tqdm(enumerate(boundary_data_loader, start=self.start_iteration),
                                                         total=len(boundary_data_loader), desc='Training'):
@@ -260,6 +262,9 @@ class NF2Trainer:
 
             # total loss
             self.loss = self.w_bc*self.loss_bc + self.w_ff*self.loss_ff + self.w_div*self.loss_div
+            losses.append(self.loss.detach().cpu().numpy())
+            loss_no_weight = self.loss_bc + self.loss_ff + self.loss_div
+            losses_no_weight.append(loss_no_weight.detach().cpu().numpy())
 
             # save initial state
             if iter == 0:
@@ -285,6 +290,8 @@ class NF2Trainer:
             if self.scheduler.get_last_lr()[0] > 5e-5:
                 self.scheduler.step()
 
+        np.save(os.path.join(self.base_path, 'losses.npy'), np.array(losses))
+        np.save(os.path.join(self.base_path, 'losses_no_weight.npy'), np.array(losses_no_weight))
         # save final model state
         self.print_log(self.total_iterations)
         self.save(self.total_iterations)

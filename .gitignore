@@ -10,3 +10,4 @@
 *.vtk
 *.fits
 **/build
+*.csv
