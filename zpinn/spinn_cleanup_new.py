@@ -100,17 +100,23 @@ class SPINN3d(nn.Module):
             return pred
 
 # %% ../nbs/31_SPINN.ipynb 13
-@partial(jax.jit, static_argnums=(0,1,2))
-def generate_train_data(nx, ny, nz, key):
+@partial(jax.jit, static_argnums=(1, 2, 3, 4, 5))
+def generate_train_data(key, nx, ny, nz, nc=None, random_nc=False):
     # collocation points
-    
-#     keys = jax.random.split(key, 4)
-#     xc = jax.random.uniform(keys[1], (nx, 1), minval=0., maxval=2.)
-#     yc = jax.random.uniform(keys[2], (ny, 1), minval=0., maxval=2.)
-#     zc = jax.random.uniform(keys[3], (nz, 1), minval=0., maxval=2.)
-    xc = jnp.linspace(0, 2, nx).reshape(nx, 1)
-    yc = jnp.linspace(0, 2, ny).reshape(ny, 1)
-    zc = jnp.linspace(0, 2, nz).reshape(nz, 1)
+    if nc is not None:
+      if random_nc is True:
+            keys = jax.random.split(key, 4)
+            xc = jax.random.uniform(keys[1], (nc, 1), minval=0., maxval=2.)
+            yc = jax.random.uniform(keys[2], (nc, 1), minval=0., maxval=2.)
+            zc = jax.random.uniform(keys[3], (nc, 1), minval=0., maxval=2.)
+      else:
+            xc = jnp.linspace(0, 2, nc).reshape(nc, 1)
+            yc = jnp.linspace(0, 2, nc).reshape(nc, 1)
+            zc = jnp.linspace(0, 2, nc).reshape(nc, 1) 
+    else:
+      xc = jnp.linspace(0, 2, nx).reshape(nx, 1)
+      yc = jnp.linspace(0, 2, ny).reshape(ny, 1)
+      zc = jnp.linspace(0, 2, nz).reshape(nz, 1)
 
     # # boundary points
     xb = [jnp.linspace(0, 2, nx).reshape(nx, 1), # z=0   bottom
