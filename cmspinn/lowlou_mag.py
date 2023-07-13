@@ -7,7 +7,7 @@ __all__ = ['LowLouMag']
 import numpy as np
 import pyvista as pv
 from fastcore.basics import *
-from .lowlouode import find_P_and_a2
+from .lowlou_ode import find_P_and_a2
 
 # %% ../nbs/02_lowlou_mag.ipynb 9
 class LowLouMag:
@@ -17,7 +17,7 @@ class LowLouMag:
                  resolutions=[64,64,64],
                  n=1, m=1,
                  l=0.3, Phi=np.pi/2,
-                 abs=False):
+                 abs=True):
         self.bounds = bounds
         self.resolutions = resolutions
         self.n = n
@@ -189,7 +189,7 @@ def calculate(self):
     self.create_bottom_boundary()
     return self.grid
 
-# %% ../nbs/02_lowlou_mag.ipynb 41
+# %% ../nbs/02_lowlou_mag.ipynb 42
 @patch_to(LowLouMag)
 def calculate_nogrid(self):
     self.create_physical_coordinates()
@@ -200,3 +200,25 @@ def calculate_nogrid(self):
     self.calculate_local_Cartesian_magnetic_fields()
     self.calculate_physical_magnetic_fields()
     return np.stack([self.Bx, self.By, self.Bz], axis=-1)
+
+# %% ../nbs/02_lowlou_mag.ipynb 44
+from .mag_viz import create_coordinates
+
+# %% ../nbs/02_lowlou_mag.ipynb 45
+@patch_to(LowLouMag)
+def redefine_mesh(self):
+    b_mesh = self.grid
+    Nx, Ny, Nz = b_mesh.dimensions
+    co_bounds = (0, Nx-1, 0, Ny-1, 0, Nz-1)
+    co_coords = create_coordinates(co_bounds).reshape(-1, 3)
+    co_coord = co_coords.reshape(Nx, Ny, Nz, 3)
+    x = co_coord[..., 0]
+    y = co_coord[..., 1]
+    z = co_coord[..., 2]
+    mesh = pv.StructuredGrid(x, y, z)
+    mesh['B'] = b_mesh['B']
+    mesh.active_vectors_name = 'B'
+    mesh['mag'] = b_mesh['mag']
+    mesh.active_scalars_name = 'mag'
+    self.newgrid = mesh
+    return self.newgrid
