@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "zpinn"
+  site-url: "/zpinn"
+  description: ""
+  repo-branch: main
+  repo-url: "https://github.com/mgjeon/zpinn"

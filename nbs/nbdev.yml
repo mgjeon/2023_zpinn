@@ -2,8 +2,8 @@ project:
   output-dir: _docs
 
 website:
-  title: "zpinn"
-  site-url: "/zpinn"
-  description: ""
+  title: "cmspinn"
+  site-url: "https://mgjeon.github.io/cmspinn"
+  description: "NLFFF SPINN"
   repo-branch: main
-  repo-url: "https://github.com/mgjeon/zpinn"
+  repo-url: "https://github.com/mgjeon/cmspinn"
