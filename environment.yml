@@ -15,7 +15,6 @@ dependencies:
   - pyvista
   - mayavi
   - tqdm
-  - torchinfo
   - k3d
   - jupyter-server-proxy
   - sunpy
