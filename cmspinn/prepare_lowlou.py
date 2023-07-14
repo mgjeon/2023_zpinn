@@ -34,6 +34,7 @@ class PrepareLowLou:
 
         b_path = os.path.join(self.lowlou_path, 'b.vtk')
         self.grid.save(b_path)
+        print(f"Saved {b_path}")
 
         return self.grid 
     
@@ -43,6 +44,7 @@ class PrepareLowLou:
         b_bottom_path = os.path.join(self.lowlou_path, 'b_bottom.npy')
         with open (b_bottom_path, 'wb') as f:
             np.save(f, b_bottom)
+        print(f"Saved {b_bottom_path}")
 
         plt.close()
         fig, ax = plt.subplots(figsize=(6,6))
