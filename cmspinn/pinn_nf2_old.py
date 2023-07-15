@@ -451,25 +451,27 @@ class NF2Trainer:
         os.makedirs(work_directory, exist_ok=True)
 
         # init logging
-        # log = logging.getLogger()
-        # log.setLevel(logging.INFO)
-        # for hdlr in log.handlers[:]:  # remove all old handlers
-        #     log.removeHandler(hdlr)
-        # log.addHandler(logging.FileHandler("{0}/{1}.log".format(base_path, "info_log")))  # set the new file handler
-        # log.addHandler(logging.StreamHandler())  # set the new console handler
+        logger = logging.getLogger()
+        logger.setLevel(logging.INFO)
+        for hdlr in logger.handlers[:]:  # remove all old handlers
+            logger.removeHandler(hdlr)
+        logger.addHandler(logging.FileHandler("{0}/{1}.log".format(base_path, "info_log")))  # set the new file handler
+        logger.addHandler(logging.StreamHandler())  # set the new console handler
 
-        # # log settings
-        # logging.info('Configuration:')
-        # logging.info(
-        #     'dim: %d, w_div: %f, w_ff: %f, decay_iterations: %s, potential: %s, vector_potential: %s, ' % (
-        #         dim, w_div, w_ff, str(decay_iterations), str(use_potential_boundary),
-        #         str(use_vector_potential)))
+        self.logger = logger
+
+        # log settings
+        self.logger.info('Configuration:')
+        self.logger.info(
+            'dim: %d, w_div: %f, w_ff: %f, decay_iterations: %s, potential: %s, vector_potential: %s, ' % (
+                dim, w_div, w_ff, str(decay_iterations), str(use_potential_boundary),
+                str(use_vector_potential)))
 
         # # setup device
-        # n_gpus = torch.cuda.device_count()
-        # device_names = [get_device_name(i) for i in range(n_gpus)]
+        n_gpus = torch.cuda.device_count()
+        device_names = [get_device_name(i) for i in range(n_gpus)]
         device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
-        # logging.info('Using device: %s (gpus %d) %s' % (str(device), n_gpus, str(device_names)))
+        self.logger.info('Using device: %s (gpus %d) %s' % (str(device), n_gpus, str(device_names)))
         self.device = device
 
         # prepare data
@@ -487,34 +489,30 @@ class NF2Trainer:
         #     model = VectorPotentialModel(3, dim, pos_encoding=positional_encoding)
         # else:
         self.model = nn.DataParallel(BModel(3, 3, dim, pos_encoding=positional_encoding)).to(device)
-        opt = torch.optim.Adam(self.model.parameters(), lr=5e-4)
+        self.opt = torch.optim.Adam(self.model.parameters(), lr=5e-4)
 
         # load last state
-        # if os.path.exists(self.checkpoint_path):
-        #     state_dict = torch.load(self.checkpoint_path, map_location=device)
-        #     start_iteration = state_dict['iteration']
-        #     model.load_state_dict(state_dict['m'])
-        #     opt.load_state_dict(state_dict['o'])
-        #     history = state_dict['history']
-        #     w_bc = state_dict['w_bc']
-        #     logging.info('Resuming training from iteration %d' % start_iteration)
-        # else:
-        #     if meta_path:
-        #         state_dict = torch.load(meta_path, map_location=device)['model'].state_dict() \
-        #             if meta_path.endswith('nf2') else torch.load(meta_path, map_location=device)['m']
-        #         model.load_state_dict(state_dict)
-        #         opt = torch.optim.Adam(parallel_model.parameters(), lr=5e-5)
-        #         logging.info('Loaded meta state: %s' % meta_path)
-        #     # init
-        #     start_iteration = 0
-        #     w_bc = 1000 if decay_iterations else 1
-        #     history = {'iteration': [], 'height': [],
-        #                'b_loss': [], 'loss_div': [], 'loss_ff': [], 'sigma_angle': []}
+        if os.path.exists(self.checkpoint_path):
+            state_dict = torch.load(self.checkpoint_path, map_location=device)
+            self.model.load_state_dict(state_dict['m'])
+            self.opt.load_state_dict(state_dict['o'])
 
-        self.opt = opt
-        # self.start_iteration = start_iteration
-        # self.history = history
-        self.w_bc = 1000 if decay_iterations else 1
+            start_iteration = state_dict['iteration']
+            self.w_bc = state_dict['w_bc']
+            self.logger.info('Resuming training from iteration %d' % start_iteration)
+        else:
+            if meta_path:
+                state_dict = torch.load(meta_path, map_location=device)['m']
+                self.model.load_state_dict(state_dict)
+                self.opt = torch.optim.Adam(self.model.parameters(), lr=5e-5)
+                self.logger.info('Loaded meta state: %s' % meta_path)
+
+            # init
+            start_iteration = 0
+            self.w_bc = 1000 if decay_iterations else 1
+
+
+        self.start_iteration = start_iteration
         self.w_bc_decay = (1 / 1000) ** (1 / decay_iterations) if decay_iterations is not None else 1
         self.w_div, self.w_ff = w_div, w_ff
 
@@ -542,7 +540,10 @@ class NF2Trainer:
         self.scheduler = ExponentialLR(opt, gamma=(5e-5 / 5e-4) ** (1 / total_iterations))
         # iterations = total_iterations - self.start_iteration
         self.total_iterations = total_iterations
-        iterations = self.total_iterations
+        iterations = self.total_iterations - self.start_iteration
+        if iterations <= 0:
+            print('Training already finished!')
+            return
 
         # init loader
         data_loader, batches_path = self._init_loader(batch_size, self.data, num_workers, iterations)
@@ -554,7 +555,7 @@ class NF2Trainer:
         # total_loss_div = []
         # total_loss_ff = []
         self.model.train()
-        for iter, (boundary_coords, b_true) in tqdm(enumerate(data_loader, start=0),
+        for iter, (boundary_coords, b_true) in tqdm(enumerate(data_loader, start=self.start_iteration),
                                                            total=len(data_loader), desc='Training'):
             opt.zero_grad()
             # load input data
@@ -729,7 +730,7 @@ class NF2Trainer:
                     os.path.join(self.base_path, filename))
 
     def print_log(self, iteration):
-        print('[Iteration %06d/%06d] [loss: %.08f] [loss_bc: %.08f; loss_div: %.08f; loss_ff: %.08f] [w_bc: %f, LR: %f]' %
+        self.logger.info('[Iteration %06d/%06d] [loss: %.08f] [loss_bc: %.08f; loss_div: %.08f; loss_ff: %.08f] [w_bc: %f, LR: %f]' %
                 (iteration, self.total_iterations,
                 self.loss,
                 self.w_bc*self.loss_bc,

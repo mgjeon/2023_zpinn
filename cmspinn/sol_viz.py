@@ -17,9 +17,12 @@ class SolarDataViz:
         hmi_map.peek()
         self.ref_wcs = hmi_map.wcs
 
-    def draw_aia(self, aia_path, wavelength):
+    def draw_aia(self, aia_path, wavelength, full_disk=False, full_disk_only=False):
         aia_map = Map(aia_path)
-        aia_map.peek()
+        if full_disk:
+            aia_map.peek()
+            if full_disk_only:
+                return
         obstime = aia_map.observer_coordinate.obstime
         obstime.format = 'iso'
         aia_repro_map = aia_map.reproject_to(self.ref_wcs)

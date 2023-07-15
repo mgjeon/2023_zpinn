@@ -77,11 +77,11 @@ class potential_cube:
 
         self.Nx, self.Ny = bz_bottom.shape
 
-    def cal_and_save_potential_field(self, vtk_path):
+    def cal_and_save_potential_field(self, vtk_path, batch_size=10000):
         bz_bottom = self.bz_bottom
         Nx, Ny, Nz = self.Nx, self.Ny, self.Nz
 
-        B_pot = get_potential_field(bz_bottom, Nz)
+        B_pot = get_potential_field(bz_bottom, Nz, batch_size=10000)
         
         Bx = B_pot[..., 0]
         By = B_pot[..., 1]

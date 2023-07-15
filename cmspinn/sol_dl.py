@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 # %% ../nbs/04_solar_data_download.ipynb 3
 class hmi_downloader:
     def __init__(self, jsoc_email):
-        jsoc_email = 'mgjeon@khu.ac.kr'
+        jsoc_email = jsoc_email
         self.client = drms.Client(email=jsoc_email, verbose=True)
 
     def find_harpnum(self, start_time):
