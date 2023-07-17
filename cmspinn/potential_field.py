@@ -2,7 +2,7 @@
 
 # %% auto 0
 __all__ = ['PotentialModel', 'get_potential', 'get_potential_field', 'potential_cube', 'get_potential_boundary',
-           'cal_and_save_potential_boundary_for_spinn']
+           'cal_and_save_potential_boundary_for_spinn', 'cal_potential_boundary_for_spinn']
 
 # %% ../nbs/08_Potential_Field.ipynb 5
 import numpy as np
@@ -196,3 +196,33 @@ def cal_and_save_potential_boundary_for_spinn(b_bottom, Nz, b_norm, boundary_pat
 
     with open(boundary_path, "wb") as f:
         pickle.dump(boundary_data, f)
+
+# %% ../nbs/08_Potential_Field.ipynb 33
+def cal_potential_boundary_for_spinn(b_bottom, Nz, b_norm):
+    bz_bottom = b_bottom[:, :, 2]
+
+    coords, fields = get_potential_boundary(b_bottom[:, :, 2], Nz)
+
+    #0 z=0   bottom
+    #1 z=2   top                  
+    #2 x=0   lateral_1            
+    #3 x=2   lateral_2            
+    #4 y=0   lateral_3            
+    #5 y=2   lateral_4    
+
+    bp_top = fields[0]
+    bp_lateral_3 = fields[1]
+    bp_lateral_4 = fields[2]
+    bp_lateral_1 = fields[3]
+    bp_lateral_2 = fields[4]
+
+    b_bottom_norm = b_bottom / b_norm
+    bp_top_norm = bp_top / b_norm
+    bp_lateral_1_norm = bp_lateral_1 / b_norm
+    bp_lateral_2_norm = bp_lateral_2 / b_norm
+    bp_lateral_3_norm = bp_lateral_3 / b_norm 
+    bp_lateral_4_norm = bp_lateral_4 / b_norm
+
+    boundary_data = (b_bottom_norm, bp_top_norm, bp_lateral_1_norm, bp_lateral_2_norm, bp_lateral_3_norm, bp_lateral_4_norm)
+
+    return boundary_data
