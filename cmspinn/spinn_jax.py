@@ -52,6 +52,7 @@ class SPINN3d(nn.Module):
         if self.pos_enc != 0:
             # positional encoding only to spatial coordinates
             freq = jnp.expand_dims(jnp.arange(1, self.pos_enc+1, 1), 0)
+            x = jnp.concatenate((jnp.ones((x.shape[0], 1)), jnp.sin(x@freq), jnp.cos(x@freq)), 1)
             y = jnp.concatenate((jnp.ones((y.shape[0], 1)), jnp.sin(y@freq), jnp.cos(y@freq)), 1)
             z = jnp.concatenate((jnp.ones((z.shape[0], 1)), jnp.sin(z@freq), jnp.cos(z@freq)), 1)
 
@@ -94,23 +95,11 @@ class SPINN3d(nn.Module):
             return pred
 
 # %% ../nbs/13_SPINN.ipynb 5
-@partial(jax.jit, static_argnums=(1, 2, 3, 4, 5))
-def generate_train_data(key, nx, ny, nz, nc=None, random_nc=False):
-    # collocation points
-    if nc is not None: # nc, nc, nc points
-      if random_nc is True: # random
-            keys = jax.random.split(key, 4)
-            xc = jax.random.uniform(keys[1], (nc, 1), minval=0., maxval=2.)
-            yc = jax.random.uniform(keys[2], (nc, 1), minval=0., maxval=2.)
-            zc = jax.random.uniform(keys[3], (nc, 1), minval=0., maxval=2.)
-      else: # linspace
-            xc = jnp.linspace(0, 2, nc).reshape(nc, 1)
-            yc = jnp.linspace(0, 2, nc).reshape(nc, 1)
-            zc = jnp.linspace(0, 2, nc).reshape(nc, 1) 
-    else: # nx, ny, nz linspace points (it's best until now)
-      xc = jnp.linspace(0, 2, nx).reshape(nx, 1)
-      yc = jnp.linspace(0, 2, ny).reshape(ny, 1)
-      zc = jnp.linspace(0, 2, nz).reshape(nz, 1)
+@partial(jax.jit, static_argnums=(1, 2, 3))
+def generate_train_data(key, nx, ny, nz):
+    xc = jnp.linspace(0, 2, nx).reshape(nx, 1)
+    yc = jnp.linspace(0, 2, ny).reshape(ny, 1)
+    zc = jnp.linspace(0, 2, nz).reshape(nz, 1)
 
     # # boundary points
     xb = [jnp.linspace(0, 2, nx).reshape(nx, 1), # z=0   bottom
