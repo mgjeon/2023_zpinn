@@ -31,8 +31,8 @@ class SPINN_Trainer:
         
         Nx, Ny, _ = b_bottom.shape
 
-        features = 256
-        n_layers = 8 
+        features = 128
+        n_layers = 3
         feat_sizes = tuple([features for _ in range(n_layers)]) 
         r = 128 
         out_dim = 3 
@@ -41,6 +41,10 @@ class SPINN_Trainer:
 
         pos_enc = 0
         mlp = 'modified_mlp'
+
+        n_max_x = 2*(Nx/Nz)
+        n_max_y = 2*(Ny/Nz)
+        n_max_z = 2*(Nz/Nz)
 
         parameters = {'feat_sizes' : feat_sizes, 
               'r' : r, 
@@ -51,8 +55,12 @@ class SPINN_Trainer:
               'b_norm' : b_norm,
               'pos_enc' : pos_enc,
               'mlp' : mlp,
-              'lr': lr}
-    
+              'lr': lr,
+              'n_max_x': n_max_x,
+              'n_max_y': n_max_y,
+              'n_max_z': n_max_z,}
+
+        
         parameters_path = os.path.join(output_path, "parameters.pickle")
         with open(parameters_path, "wb") as f:
             pickle.dump(parameters, f)
@@ -90,7 +98,7 @@ class SPINN_Trainer:
         with open(BC_path, 'rb') as f:
             boundary_data = pickle.load(f)
 
-        train_data = generate_train_data(subkey, Nx, Ny, Nz)
+        train_data = generate_train_data(subkey, Nx, Ny, Nz, n_max_x, n_max_y, n_max_z)
         train_boundary_data = [train_data, boundary_data]
 
         self.apply_fn = apply_fn

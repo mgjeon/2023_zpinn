@@ -94,38 +94,38 @@ class SPINN3d(nn.Module):
             # n-dimensional output
             return pred
 
-# %% ../nbs/13_SPINN.ipynb 5
-@partial(jax.jit, static_argnums=(1, 2, 3))
-def generate_train_data(key, nx, ny, nz):
-    xc = jnp.linspace(0, 2, nx).reshape(nx, 1)
-    yc = jnp.linspace(0, 2, ny).reshape(ny, 1)
-    zc = jnp.linspace(0, 2, nz).reshape(nz, 1)
+# %% ../nbs/13_SPINN.ipynb 6
+@partial(jax.jit, static_argnums=(1, 2, 3, 4, 5, 6))
+def generate_train_data(key, nx, ny, nz, n_max_x, n_max_y, n_max_z):
+    xc = jnp.linspace(0, n_max_x, nx).reshape(-1, 1)
+    yc = jnp.linspace(0, n_max_y, ny).reshape(-1, 1)
+    zc = jnp.linspace(0, n_max_z, nz).reshape(-1, 1)
 
     # # boundary points
-    xb = [jnp.linspace(0, 2, nx).reshape(nx, 1), # z=0   bottom
-          jnp.linspace(0, 2, nx).reshape(nx, 1), # z=2   top
+    xb = [jnp.linspace(0, n_max_x, nx).reshape(-1, 1), # z=0   bottom
+          jnp.linspace(0, n_max_x, nx).reshape(-1, 1), # z=2   top
           jnp.array([[0.]]),                     # x=0   lateral_1
-          jnp.array([[2.]]),                     # x=2   lateral_2
-          jnp.linspace(0, 2, nx).reshape(nx, 1), # y=0   lateral_3
-          jnp.linspace(0, 2, nx).reshape(nx, 1)] # y=2   lateral_4
+          jnp.array([[n_max_x]]),                     # x=2   lateral_2
+          jnp.linspace(0, n_max_x, nx).reshape(-1, 1), # y=0   lateral_3
+          jnp.linspace(0, n_max_x, nx).reshape(-1, 1)] # y=2   lateral_4
 
-    yb = [jnp.linspace(0, 2, ny).reshape(ny, 1), 
-          jnp.linspace(0, 2, ny).reshape(ny, 1), 
-          jnp.linspace(0, 2, ny).reshape(ny, 1), 
-          jnp.linspace(0, 2, ny).reshape(ny, 1), 
+    yb = [jnp.linspace(0, n_max_y, ny).reshape(-1, 1), 
+          jnp.linspace(0, n_max_y, ny).reshape(-1, 1), 
+          jnp.linspace(0, n_max_y, ny).reshape(-1, 1), 
+          jnp.linspace(0, n_max_y, ny).reshape(-1, 1), 
           jnp.array([[0.]]), 
-          jnp.array([[2.]])]
+          jnp.array([[n_max_y]])]
 
     zb = [jnp.array([[0.]]), 
-          jnp.array([[2.]]), 
-          jnp.linspace(0, 2, nz).reshape(nz, 1), 
-          jnp.linspace(0, 2, nz).reshape(nz, 1), 
-          jnp.linspace(0, 2, nz).reshape(nz, 1), 
-          jnp.linspace(0, 2, nz).reshape(nz, 1)]
+          jnp.array([[n_max_z]]), 
+          jnp.linspace(0, n_max_z, nz).reshape(-1, 1), 
+          jnp.linspace(0, n_max_z, nz).reshape(-1, 1), 
+          jnp.linspace(0, n_max_z, nz).reshape(-1, 1), 
+          jnp.linspace(0, n_max_z, nz).reshape(-1, 1)]
 
     return xc, yc, zc, xb, yb, zb
 
-# %% ../nbs/13_SPINN.ipynb 6
+# %% ../nbs/13_SPINN.ipynb 7
 def curlx(apply_fn, params, x, y, z):
     # curl vector w/ forward-mode AD
     # w_x = uz_y - uy_z
@@ -157,7 +157,7 @@ def curlz(apply_fn, params, x, y, z):
     wz = uy_x - ux_y
     return wz
 
-# %% ../nbs/13_SPINN.ipynb 7
+# %% ../nbs/13_SPINN.ipynb 8
 @partial(jax.jit, static_argnums=(0,))
 def apply_model_spinn(apply_fn, params, train_boundary_data):
     def residual_loss(params, x, y, z):
@@ -174,13 +174,13 @@ def apply_model_spinn(apply_fn, params, train_boundary_data):
         JxB = jnp.cross(J, B, axis=-1) 
 
         #-----------------------------------------------------------
-        loss_ff = jnp.sum(JxB**2, axis=-1) / (jnp.sum(B**2, axis=-1) + 1e-7)
+        loss_ff = jnp.sum(JxB**2, axis=-1)
         loss_ff = jnp.mean(loss_ff)
 
-        # loss_ff = jnp.mean(JxB**2)
-
-        # loss_ff = jnp.sum(JxB**2, axis=-1)
+        # loss_ff = jnp.sum(JxB**2, axis=-1) / (jnp.sum(B**2, axis=-1) + 1e-7)
         # loss_ff = jnp.mean(loss_ff)
+
+        # loss_ff = jnp.mean(JxB**2)
         #-----------------------------------------------------------
 
         # tangent vector dx/dx

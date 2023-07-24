@@ -37,6 +37,9 @@ class spinn_cube:
         b_norm = parameters['b_norm']
         pos_enc = parameters['pos_enc']
         mlp = parameters['mlp']
+        n_max_x = parameters['n_max_x']
+        n_max_y = parameters['n_max_y']
+        n_max_z = parameters['n_max_z']
 
         subkey = jax.random.PRNGKey(0)
         model = SPINN3d(feat_sizes, r, out_dim, pos_enc=pos_enc, mlp=mlp)
@@ -51,9 +54,9 @@ class spinn_cube:
         with open(param_path, 'rb') as f:
             params = pickle.load(f)
 
-        x = jnp.linspace(0, 2, Nx).reshape(-1, 1)
-        y = jnp.linspace(0, 2, Ny).reshape(-1, 1)
-        z = jnp.linspace(0, 2, Nz).reshape(-1, 1)
+        x = jnp.linspace(0, n_max_x, Nx).reshape(-1, 1)
+        y = jnp.linspace(0, n_max_y, Ny).reshape(-1, 1)
+        z = jnp.linspace(0, n_max_z, Nz).reshape(-1, 1)
         x, y, z = jax.lax.stop_gradient(x), jax.lax.stop_gradient(y), jax.lax.stop_gradient(z)
 
         Bx, By, Bz = apply_fn(params, x, y, z)
