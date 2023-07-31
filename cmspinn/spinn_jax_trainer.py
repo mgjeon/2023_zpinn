@@ -31,10 +31,10 @@ class SPINN_Trainer:
         
         Nx, Ny, _ = b_bottom.shape
 
-        features = 128
-        n_layers = 3
+        features = 512
+        n_layers = 8
         feat_sizes = tuple([features for _ in range(n_layers)]) 
-        r = 128 
+        r = 512 
         out_dim = 3 
 
         lr = 5e-4
@@ -42,9 +42,9 @@ class SPINN_Trainer:
         pos_enc = 0
         mlp = 'modified_mlp'
 
-        n_max_x = 2*(Nx/Nz)
-        n_max_y = 2*(Ny/Nz)
-        n_max_z = 2*(Nz/Nz)
+        n_max_x = 2*(Nx/Nx)
+        n_max_y = 2*(Ny/Nx)
+        n_max_z = 2*(Nz/Nx)
 
         parameters = {'feat_sizes' : feat_sizes, 
               'r' : r, 

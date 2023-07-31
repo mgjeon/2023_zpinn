@@ -174,11 +174,11 @@ def apply_model_spinn(apply_fn, params, train_boundary_data):
         JxB = jnp.cross(J, B, axis=-1) 
 
         #-----------------------------------------------------------
-        loss_ff = jnp.sum(JxB**2, axis=-1)
-        loss_ff = jnp.mean(loss_ff)
-
-        # loss_ff = jnp.sum(JxB**2, axis=-1) / (jnp.sum(B**2, axis=-1) + 1e-7)
+        # loss_ff = jnp.sum(JxB**2, axis=-1)
         # loss_ff = jnp.mean(loss_ff)
+
+        loss_ff = jnp.sum(JxB**2, axis=-1) / (jnp.sum(B**2, axis=-1) + 1e-7)
+        loss_ff = jnp.mean(loss_ff)
 
         # loss_ff = jnp.mean(JxB**2)
         #-----------------------------------------------------------
