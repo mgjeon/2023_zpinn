@@ -460,6 +460,11 @@ class NF2Trainer:
 
         self.logger = logger
 
+        self.final_path = os.path.join(base_path, 'model_final.pt')
+        if os.path.exists(self.final_path):
+            self.logger.info(f'Training already finished! {self.final_path}')
+            return
+
         # log settings
         self.logger.info('Configuration:')
         self.logger.info(
@@ -669,7 +674,8 @@ class NF2Trainer:
         np.save(os.path.join(self.base_path, 'losses_no_weight.npy'), np.array(losses_no_weight))
         self.print_log(self.total_iterations)
         self.save(self.total_iterations)
-        self.save_state_dict(self.total_iterations, 'model_final.pt')
+        self.save(self.total_iterations, 'model_final.pt')
+        self.save_state_dict(self.total_iterations, 'checkpoint_final.pt')
         os.remove(batches_path)
 
         # return self.save_path
@@ -707,7 +713,10 @@ class NF2Trainer:
     #                 'w_bc': self.w_bc},
     #                self.checkpoint_path)
         
-    def save(self, iteration):
+    def save(self, iteration, filename=None):
+        if filename is None:
+            filename = 'model_%06d.pt' % iteration
+
         torch.save({'iteration': iteration,
                     'model': self.model,
                     'cube_shape': self.cube_shape,
@@ -720,7 +729,7 @@ class NF2Trainer:
                     'loss_ff': self.loss_ff.detach().cpu().numpy(),
                     'w_ff': self.w_ff,
                     'LR':self.scheduler.get_last_lr()[0]}, 
-                    os.path.join(self.base_path, 'model_%06d.pt' % iteration))
+                    os.path.join(self.base_path, filename))
         
     def save_state_dict(self, iteration, filename):
         torch.save({'iteration': iteration,

@@ -24,9 +24,9 @@ import glob
 import time
 from pathlib import Path
 
-# %% ../nbs/28_SPINN_series.ipynb 10
+# %% ../nbs/28_SPINN_series.ipynb 12
 class SPINN_Trainer:
-    def __init__(self, output_path, BC_path, b_bottom, Nz, b_norm, transfer_learning_path=None):
+    def __init__(self, output_path, BC_path, b_bottom, Nz, b_norm, transfer_learning_path=None, logger=None):
         os.makedirs(output_path, exist_ok=True)
         
         Nx, Ny, _ = b_bottom.shape
@@ -60,6 +60,7 @@ class SPINN_Trainer:
               'n_max_y': n_max_y,
               'n_max_z': n_max_z,}
 
+        logger.info(parameters)
         
         parameters_path = os.path.join(output_path, "parameters.pickle")
         with open(parameters_path, "wb") as f:
@@ -108,18 +109,28 @@ class SPINN_Trainer:
         self.state = state
         self.output_path = output_path
 
+        self.logger = logger
+
     def train(self, total_iterations, log_iterations, loss_threshold=0.001):
         params = self.params
         state = self.state
 
+        logger = self.logger
+
         losses = []
-        print('Complie Start')
+        if logger is None:
+            print('Complie Start')
+        else: 
+            logger.info('Complie Start')
         start = time.time()
         loss, gradient = apply_model_spinn(self.apply_fn, params, self.train_boundary_data)
         losses.append(loss.item())
         params, state = update_model(self.optim, gradient, params, state)
         runtime = time.time() - start
-        print(f'Complie End --> total: {runtime:.2f}sec')
+        if logger is None:
+            print(f'Complie End --> total: {runtime:.2f}sec')
+        else:
+            logger.info(f'Complie End --> total: {runtime:.2f}sec')
 
         start = time.time()
         for e in trange(1, total_iterations + 1):
@@ -127,13 +138,19 @@ class SPINN_Trainer:
             loss, gradient = apply_model_spinn(self.apply_fn, params, self.train_boundary_data)
             losses.append(loss.item())
             if loss.item() < loss_threshold:
-                print(f'Epoch: {e}/{total_iterations} --> loss: {loss:.8f} < {loss_threshold}')
+                if logger is None:
+                    print(f'Epoch: {e}/{total_iterations} --> loss: {loss:.8f} < {loss_threshold}')
+                else:
+                    logger.info(f'Epoch: {e}/{total_iterations} --> loss: {loss:.8f} < {loss_threshold}')
                 break
             
             params, state = update_model(self.optim, gradient, params, state)
             
             if e % log_iterations == 0:
-                print(f'Epoch: {e}/{total_iterations} --> total loss: {loss:.8f}')
+                if logger is None:
+                    print(f'Epoch: {e}/{total_iterations} --> total loss: {loss:.8f}')
+                else:
+                    logger.info(f'Epoch: {e}/{total_iterations} --> total loss: {loss:.8f}')
                 params_path = os.path.join(self.output_path, f"params_{e}.pickle")
                 with open(params_path, "wb") as f:
                     pickle.dump(params, f)
@@ -145,4 +162,7 @@ class SPINN_Trainer:
         np.save(os.path.join(self.output_path, 'losses.npy'), losses)
 
         runtime = time.time() - start
-        print(f'Runtime --> total: {runtime:.2f}sec ({(runtime/(total_iterations-1)*1000):.2f}ms/iter.)')
+        if logger is None:
+            print(f'Runtime --> total: {runtime:.2f}sec ({(runtime/(total_iterations-1)*1000):.2f}ms/iter.)')
+        else:
+            logger.info(f'Runtime --> total: {runtime:.2f}sec ({(runtime/(total_iterations-1)*1000):.2f}ms/iter.)')
