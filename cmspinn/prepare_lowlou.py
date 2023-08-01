@@ -26,30 +26,39 @@ class PrepareLowLou:
         self.abs = abs
 
     def cal_and_save_lowlou(self):
+        b_path = os.path.join(self.lowlou_path, 'b.vtk')
+        if os.path.exists(b_path):
+            print(f'Exist {b_path}')
+            return
         lowlou = LowLouMag(bounds=self.bounds, resolutions=[self.Nx, self.Ny, self.Nz], n=self.n, m=self.m, l=self.l, Phi=self.Phi, abs=self.abs) 
         lowlou.calculate()
         lowlou.redefine_mesh()
         self.grid = lowlou.newgrid 
         self.bottom = lowlou.b_bottom
 
-        b_path = os.path.join(self.lowlou_path, 'b.vtk')
         self.grid.save(b_path)
         print(f"Saved {b_path}")
 
         return self.grid 
     
-    def plot_and_save_lowlou_bottom(self):
+    def plot_and_save_lowlou_bottom(self, plot=True):
+        os.makedirs(os.path.join(self.lowlou_path, 'b_bottom'), exist_ok=True)
+        b_bottom_path = os.path.join(os.path.join(self.lowlou_path, 'b_bottom'), 'b_bottom.npy')
+        if os.path.exists(b_bottom_path):
+            print(f'Exist {b_bottom_path}')
+            return
+        
         b_bottom = np.array(self.bottom)
 
-        b_bottom_path = os.path.join(self.lowlou_path, 'b_bottom.npy')
         with open (b_bottom_path, 'wb') as f:
             np.save(f, b_bottom)
         print(f"Saved {b_bottom_path}")
 
-        plt.close()
-        fig, ax = plt.subplots(figsize=(6,6))
-        CS = plt.imshow(b_bottom[:, :, 2].transpose(), origin='lower', cmap='gray')
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
-        fig.colorbar(CS, label=r'$B_z$'+f'(z={0})')
-        plt.show()
+        if plot is True:
+            plt.close()
+            fig, ax = plt.subplots(figsize=(6,6))
+            CS = plt.imshow(b_bottom[:, :, 2].transpose(), origin='lower', cmap='gray')
+            ax.set_xlabel('x')
+            ax.set_ylabel('y')
+            fig.colorbar(CS, label=r'$B_z$'+f'(z={0})')
+            plt.show()

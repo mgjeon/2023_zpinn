@@ -86,6 +86,12 @@ class PrepareHMI:
 
     def save_bottom(self, stride=2):
         for hmi_p, hmi_t, hmi_r in self.data_paths:
+            obs_date = os.path.basename(hmi_p)[-27:-12]
+            b_bottom_path = os.path.join(self.base_path, f'b_bottom_{obs_date}.npy')
+            if os.path.exists(b_bottom_path):
+                print(f'Exist {b_bottom_path}')
+                continue
+
             p_map = Map(hmi_p)
             t_map = Map(hmi_t)
             r_map = Map(hmi_r)
@@ -95,9 +101,6 @@ class PrepareHMI:
             B_binned = np.stack([maps_binned[0].data, -maps_binned[1].data, maps_binned[2].data]).transpose()
 
             b_bottom = np.array(B_binned)
-            
-            obs_date = os.path.basename(hmi_p)[-27:-12]
-            b_bottom_path = os.path.join(self.base_path, f'b_bottom_{obs_date}.npy')
 
             with open(b_bottom_path, 'wb') as f:
                 np.save(f, b_bottom)

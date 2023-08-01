@@ -460,11 +460,6 @@ class NF2Trainer:
 
         self.logger = logger
 
-        self.final_path = os.path.join(base_path, 'model_final.pt')
-        if os.path.exists(self.final_path):
-            self.logger.info(f'Training already finished! {self.final_path}')
-            return
-
         # log settings
         self.logger.info('Configuration:')
         self.logger.info(

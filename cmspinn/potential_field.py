@@ -48,7 +48,7 @@ def get_potential(b_n, height, batch_size=2048, strides=(1, 1, 1), progress=True
 
         coords = torch.tensor(coords, dtype=torch.float32)
         potential = []
-        loader = DataLoader(TensorDataset(coords), batch_size=batch_size, num_workers=8)
+        loader = DataLoader(TensorDataset(coords), batch_size=batch_size, num_workers=0)
         it = tqdm(loader, desc='Potential Field') if progress else loader
         for coord, in it:
             coord = coord.to(device)
@@ -68,6 +68,7 @@ def get_potential_field(b_n, height, *args, **kwargs):
 # %% ../nbs/08_Potential_Field.ipynb 14
 from .mag_viz import create_coordinates
 import pyvista as pv
+import os
 
 # %% ../nbs/08_Potential_Field.ipynb 15
 class potential_cube:
@@ -78,6 +79,9 @@ class potential_cube:
         self.Nx, self.Ny = bz_bottom.shape
 
     def cal_and_save_potential_field(self, vtk_path, batch_size=10000):
+        if os.path.exists(vtk_path):
+            print(f'Exist {vtk_path}')
+            return
         bz_bottom = self.bz_bottom
         Nx, Ny, Nz = self.Nx, self.Ny, self.Nz
 
@@ -145,8 +149,8 @@ def _compute_fields(coords, cube_shape, b_n, batch_size=2048, progress=False):
         flat_coords = torch.tensor(flat_coords, dtype=torch.float32, )
 
         potential = []
-        iter = DataLoader(TensorDataset(flat_coords), batch_size=batch_size, num_workers=2)
-        iter = iter if progress else tqdm(iter, desc='Potential Field')
+        iter = DataLoader(TensorDataset(flat_coords), batch_size=batch_size, num_workers=0)
+        iter = iter if progress else tqdm(iter, desc='Potential Boundary')
         for coord, in iter:
             coord = coord.to(device)
             p_batch = model(coord)

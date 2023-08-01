@@ -219,3 +219,5 @@ class mag_plotter:
             ax.set_title(title, fontsize=fontsize)
         fig.colorbar(CS, label=r'$B_z$'+f'(z={z})')
         plt.show()
+
+        return self.B[:, :, z, 2].transpose()

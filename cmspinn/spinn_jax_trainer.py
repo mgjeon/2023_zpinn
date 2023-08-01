@@ -26,9 +26,19 @@ from pathlib import Path
 
 # %% ../nbs/28_SPINN_series.ipynb 12
 class SPINN_Trainer:
-    def __init__(self, output_path, BC_path, b_bottom, Nz, b_norm, transfer_learning_path=None, logger=None):
+    def __init__(self, output_path, BC_path, b_bottom, Nz, b_norm, transfer_learning_path=None):
         os.makedirs(output_path, exist_ok=True)
+
+        import logging
+        logger = logging.getLogger()
+        logger.setLevel(logging.INFO)
+        for hdlr in logger.handlers[:]:  # remove all old handlers
+            logger.removeHandler(hdlr)
+        logger.addHandler(logging.FileHandler("{0}/{1}.log".format(output_path, "info_log")))  # set the new file handler
+        logger.addHandler(logging.StreamHandler())  # set the new console handler
         
+        self.logger = logger
+
         Nx, Ny, _ = b_bottom.shape
 
         features = 512
