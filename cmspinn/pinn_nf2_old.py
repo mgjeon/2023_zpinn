@@ -516,7 +516,7 @@ class NF2Trainer:
         self.w_bc_decay = (1 / 1000) ** (1 / decay_iterations) if decay_iterations is not None else 1
         self.w_div, self.w_ff = w_div, w_ff
 
-    def train(self, total_iterations, batch_size, log_interval=100, validation_interval=100, num_workers=None):
+    def train(self, total_iterations, Nc, bc_batch_size, log_interval=100, validation_interval=100, num_workers=None):
         """Start magnetic field extrapolation fit.
 
         :param total_iterations: number of iterations for training.
@@ -536,7 +536,7 @@ class NF2Trainer:
         device = self.device
 
         # init
-        sampler = RandomCoordinateSampler(self.cube_shape, self.spatial_norm, batch_size * 2)
+        sampler = RandomCoordinateSampler(self.cube_shape, self.spatial_norm, Nc**3)
         self.scheduler = ExponentialLR(opt, gamma=(5e-5 / 5e-4) ** (1 / total_iterations))
         # iterations = total_iterations - self.start_iteration
         self.total_iterations = total_iterations
@@ -546,7 +546,7 @@ class NF2Trainer:
             return
 
         # init loader
-        data_loader, batches_path = self._init_loader(batch_size, self.data, num_workers, iterations)
+        data_loader, batches_path = self._init_loader(bc_batch_size, self.data, num_workers, iterations)
 
         losses = []
         losses_no_weight = []

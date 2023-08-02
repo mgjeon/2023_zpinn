@@ -488,6 +488,15 @@ class SPINN_Trainer:
         w_bc_decay_iterations = parameters['w_bc_decay_iterations']
         w_bc_decay = (1 / w_bc) ** (1 / w_bc_decay_iterations) if w_bc_decay_iterations is not None else 1
 
+        if (is_random is True) and (Nc is not None):
+            random_interval = parameters['random_interval']
+            Nx = parameters['Nx']
+            Ny = parameters['Ny']
+            Nz = parameters['Nz']
+            n_max_x = parameters['n_max_x']
+            n_max_y = parameters['n_max_y']
+            n_max_z = parameters['n_max_z']
+
         losses = []
         if logger is None:
             print('Complie Start')
@@ -497,12 +506,26 @@ class SPINN_Trainer:
         loss, gradient = apply_model_spinn(self.apply_fn, params, self.train_boundary_data, w_ff, w_div, w_bc)
         losses.append(loss.item())
         params, state = update_model(self.optim, gradient, params, state)
+
+        if w_bc > 1:
+                w_bc *= w_bc_decay
+                if w_bc <= 1:
+                   w_bc = 1
+
+        if (is_random is True) and (Nc is not None):
+            key, subkey = jax.random.split(key, 2)
+            train_data = generate_train_data_random(subkey, Nx, Ny, Nz, n_max_x, n_max_y, n_max_z, Nc)
+            self.tran_boundary_data = [train_data, self.boundary_data]
+
+        loss, gradient = apply_model_spinn(self.apply_fn, params, self.train_boundary_data, w_ff, w_div, w_bc)
+        losses.append(loss.item())
+        params, state = update_model(self.optim, gradient, params, state)
         runtime = time.time() - start
         if logger is None:
             print(f'Complie End --> total: {runtime:.2f}sec')
         else:
             logger.info(f'Complie End --> total: {runtime:.2f}sec')
-
+    
         start = time.time()
         for e in trange(1, total_iterations + 1):
 
@@ -512,14 +535,6 @@ class SPINN_Trainer:
                    w_bc = 1
 
             if (is_random is True) and (Nc is not None):
-                random_interval = parameters['random_interval']
-                Nx = parameters['Nx']
-                Ny = parameters['Ny']
-                Nz = parameters['Nz']
-                n_max_x = parameters['n_max_x']
-                n_max_y = parameters['n_max_y']
-                n_max_z = parameters['n_max_z']
-
                 if e % random_interval == 0:
                     # sample new input data
                     key, subkey = jax.random.split(key, 2)
