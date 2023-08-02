@@ -1,0 +1,21 @@
+name: pinf
+channels:
+  - fastai
+  - conda-forge
+dependencies:
+  - python=3.10
+  - nbdev
+  - ipykernel
+  - ca-certificates
+  - certifi
+  - openssl
+  - numpy
+  - scipy
+  - matplotlib
+  - pyvista
+  - mayavi
+  - tqdm
+  - k3d
+  - jupyter-server-proxy
+  - sunpy
+  - astropy
