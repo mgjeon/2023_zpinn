@@ -130,13 +130,21 @@ def generate_train_data(nx, ny, nz, n_max_x, n_max_y, n_max_z):
     return xc, yc, zc, xb, yb, zb
 
 # %% ../nbs/33_SPINN_trainer.ipynb 6
-@partial(jax.jit, static_argnums=(1, 2, 3, 4, 5, 6, 7))
-def generate_train_data_random(key, nx, ny, nz, n_max_x, n_max_y, n_max_z, nc):
+@partial(jax.jit, static_argnums=(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
+def generate_train_data_random(key, nx, ny, nz, n_max_x, n_max_y, n_max_z, nc, ncx=None, ncy=None, ncz=None):
     
     keys = jax.random.split(key, 4)
-    xc = jax.random.uniform(keys[1], (nc, 1), minval=0., maxval=n_max_x)
-    yc = jax.random.uniform(keys[2], (nc, 1), minval=0., maxval=n_max_x)
-    zc = jax.random.uniform(keys[3], (nc, 1), minval=0., maxval=n_max_x)
+
+    if (ncx is not None) and (ncy is not None) and (ncz is not None):
+      xc = jax.random.uniform(keys[1], (ncx, 1), minval=0., maxval=n_max_x)
+      yc = jax.random.uniform(keys[2], (ncy, 1), minval=0., maxval=n_max_x)
+      zc = jax.random.uniform(keys[3], (ncz, 1), minval=0., maxval=n_max_x)
+    
+    else:
+      xc = jax.random.uniform(keys[1], (nc, 1), minval=0., maxval=n_max_x)
+      yc = jax.random.uniform(keys[2], (nc, 1), minval=0., maxval=n_max_x)
+      zc = jax.random.uniform(keys[3], (nc, 1), minval=0., maxval=n_max_x)
+
 
     # boundary points
     xb = [jnp.linspace(0, n_max_x, nx).reshape(-1, 1), # z=0   bottom
@@ -410,7 +418,6 @@ class SPINN_Trainer:
             n_max_z = parameters['n_max_z']
             is_random = parameters['is_random']
             Nc = parameters['Nc']
-            random_interval = parameters['random_interval']
 
         logger.info(parameters)
         
@@ -450,8 +457,11 @@ class SPINN_Trainer:
         with open(BC_path, 'rb') as f:
             boundary_data = pickle.load(f)
         
-        if (is_random is True) and (Nc is not None):
-            train_data = generate_train_data_random(subkey, Nx, Ny, Nz, n_max_x, n_max_y, n_max_z, Nc)
+        if is_random is True:
+            Ncx = parameters['Ncx']
+            Ncy = parameters['Ncy']
+            Ncz = parameters['Ncz']
+            train_data = generate_train_data_random(subkey, Nx, Ny, Nz, n_max_x, n_max_y, n_max_z, Nc, Ncx, Ncy, Ncz)
         else:
             train_data = generate_train_data(Nx, Ny, Nz, n_max_x, n_max_y, n_max_z)
 
@@ -488,7 +498,7 @@ class SPINN_Trainer:
         w_bc_decay_iterations = parameters['w_bc_decay_iterations']
         w_bc_decay = (1 / w_bc) ** (1 / w_bc_decay_iterations) if w_bc_decay_iterations is not None else 1
 
-        if (is_random is True) and (Nc is not None):
+        if is_random is True:
             random_interval = parameters['random_interval']
             Nx = parameters['Nx']
             Ny = parameters['Ny']
@@ -496,6 +506,9 @@ class SPINN_Trainer:
             n_max_x = parameters['n_max_x']
             n_max_y = parameters['n_max_y']
             n_max_z = parameters['n_max_z']
+            Ncx = parameters['Ncx']
+            Ncy = parameters['Ncy']
+            Ncz = parameters['Ncz']
 
         losses = []
         if logger is None:
@@ -512,10 +525,11 @@ class SPINN_Trainer:
                 if w_bc <= 1:
                    w_bc = 1
 
-        if (is_random is True) and (Nc is not None):
+        if is_random is True:
             key, subkey = jax.random.split(key, 2)
-            train_data = generate_train_data_random(subkey, Nx, Ny, Nz, n_max_x, n_max_y, n_max_z, Nc)
+            train_data = generate_train_data_random(subkey, Nx, Ny, Nz, n_max_x, n_max_y, n_max_z, Nc, Ncx, Ncy, Ncz)
             self.tran_boundary_data = [train_data, self.boundary_data]
+        
 
         loss, gradient = apply_model_spinn(self.apply_fn, params, self.train_boundary_data, w_ff, w_div, w_bc)
         losses.append(loss.item())
@@ -534,11 +548,11 @@ class SPINN_Trainer:
                 if w_bc <= 1:
                    w_bc = 1
 
-            if (is_random is True) and (Nc is not None):
+            if is_random is True:
                 if e % random_interval == 0:
                     # sample new input data
                     key, subkey = jax.random.split(key, 2)
-                    train_data = generate_train_data_random(subkey, Nx, Ny, Nz, n_max_x, n_max_y, n_max_z, Nc)
+                    train_data = generate_train_data_random(subkey, Nx, Ny, Nz, n_max_x, n_max_y, n_max_z, Nc, Ncx, Ncy, Ncz)
                     self.tran_boundary_data = [train_data, self.boundary_data]
 
             loss, gradient = apply_model_spinn(self.apply_fn, params, self.train_boundary_data, w_ff, w_div, w_bc)

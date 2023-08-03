@@ -85,7 +85,7 @@ class potential_cube:
         bz_bottom = self.bz_bottom
         Nx, Ny, Nz = self.Nx, self.Ny, self.Nz
 
-        B_pot = get_potential_field(bz_bottom, Nz, batch_size=10000)
+        B_pot = get_potential_field(bz_bottom, Nz, batch_size=batch_size)
         
         Bx = B_pot[..., 0]
         By = B_pot[..., 1]
