@@ -171,10 +171,10 @@ def _compute_fields(coords, cube_shape, b_n, batch_size=2048, progress=False):
 import pickle
 
 # %% ../nbs/08_Potential_Field.ipynb 32
-def cal_and_save_potential_boundary_for_spinn(b_bottom, Nz, b_norm, boundary_path):
+def cal_and_save_potential_boundary_for_spinn(b_bottom, Nz, b_norm, boundary_path, batch_size=2048):
     bz_bottom = b_bottom[:, :, 2]
 
-    coords, fields = get_potential_boundary(b_bottom[:, :, 2], Nz)
+    coords, fields = get_potential_boundary(b_bottom[:, :, 2], Nz, batch_size=batch_size)
 
     #0 z=0   bottom
     #1 z=2   top                  
