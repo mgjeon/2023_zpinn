@@ -135,8 +135,8 @@ def generate_train_data(nx, ny, nz, n_max_x, n_max_y, n_max_z):
     return xc, yc, zc, xb, yb, zb
 
 # %% ../nbs/33_SPINN_trainer.ipynb 6
-@partial(jax.jit, static_argnums=(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
-def generate_train_data_random(key, nx, ny, nz, n_max_x, n_max_y, n_max_z, nc, ncx=None, ncy=None, ncz=None):
+@partial(jax.jit, static_argnums=(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11))
+def generate_train_data_random(key, nx, ny, nz, n_max_x, n_max_y, n_max_z, nc, ncx=None, ncy=None, ncz=None, choice=False):
     
     keys = jax.random.split(key, 4)
 
@@ -145,10 +145,11 @@ def generate_train_data_random(key, nx, ny, nz, n_max_x, n_max_y, n_max_z, nc, n
       yc = jax.random.uniform(keys[2], (ncy, 1), minval=0., maxval=n_max_x)
       zc = jax.random.uniform(keys[3], (ncz, 1), minval=0., maxval=n_max_x)
     
+    elif choice is False:
+      xc = jax.random.uniform(keys[1], (nc, 1), minval=0., maxval=n_max_x)
+      yc = jax.random.uniform(keys[2], (nc, 1), minval=0., maxval=n_max_x)
+      zc = jax.random.uniform(keys[3], (nc, 1), minval=0., maxval=n_max_x)
     else:
-      # xc = jax.random.uniform(keys[1], (nc, 1), minval=0., maxval=n_max_x)
-      # yc = jax.random.uniform(keys[2], (nc, 1), minval=0., maxval=n_max_x)
-      # zc = jax.random.uniform(keys[3], (nc, 1), minval=0., maxval=n_max_x)
       xc = jnp.linspace(0, n_max_x, nx).reshape(-1, 1)
       yc = jnp.linspace(0, n_max_y, ny).reshape(-1, 1)
       zc = jnp.linspace(0, n_max_z, nz).reshape(-1, 1)
@@ -590,6 +591,8 @@ class SPINN_Trainer:
             n_max_z = parameters['n_max_z']
             is_random = parameters['is_random']
             Nc = parameters['Nc']
+            decay_rate = parameters['decay_rate']
+            series_lr = parameters['series_lr']
 
         logger.info(parameters)
         
@@ -612,7 +615,8 @@ class SPINN_Trainer:
             apply_fn = jax.jit(model.apply)
 
             if lr_decay_iterations is not None: 
-                optim = optax.adam(learning_rate=optax.cosine_decay_schedule(lr, lr_decay_iterations))
+                optim = optax.adam(learning_rate=optax.exponential_decay(init_value=lr, transition_steps=lr_decay_iterations,
+                                                                         decay_rate=decay_rate))
             else:
                 optim = optax.adam(learning_rate=lr)
 
@@ -629,7 +633,8 @@ class SPINN_Trainer:
                 params = pickle.load(f)
 
             if lr_decay_iterations is not None: 
-                optim = optax.adam(learning_rate=optax.cosine_decay_schedule(lr, lr_decay_iterations))
+                optim = optax.adam(learning_rate=optax.exponential_decay(init_value=series_lr, transition_steps=lr_decay_iterations,
+                                                                         decay_rate=decay_rate))
             else:
                 optim = optax.adam(learning_rate=lr)
                 
@@ -642,7 +647,8 @@ class SPINN_Trainer:
             Ncx = parameters['Ncx']
             Ncy = parameters['Ncy']
             Ncz = parameters['Ncz']
-            train_data = generate_train_data_random(subkey, Nx, Ny, Nz, n_max_x, n_max_y, n_max_z, Nc, Ncx, Ncy, Ncz)
+            choice = parameters['choice']
+            train_data = generate_train_data_random(subkey, Nx, Ny, Nz, n_max_x, n_max_y, n_max_z, Nc, Ncx, Ncy, Ncz, choice)
         else:
             train_data = generate_train_data(Nx, Ny, Nz, n_max_x, n_max_y, n_max_z)
 
@@ -693,6 +699,7 @@ class SPINN_Trainer:
             Ncy = parameters['Ncy']
             Ncz = parameters['Ncz']
             key, subkey = jax.random.split(key, 2)
+            choice = parameters['choice']
 
         losses = []
         if logger is None:
@@ -715,7 +722,7 @@ class SPINN_Trainer:
                 w_bc = 1
 
         if is_random is True:
-            train_data = generate_train_data_random(subkey, Nx, Ny, Nz, n_max_x, n_max_y, n_max_z, Nc, Ncx, Ncy, Ncz)
+            train_data = generate_train_data_random(subkey, Nx, Ny, Nz, n_max_x, n_max_y, n_max_z, Nc, Ncx, Ncy, Ncz, choice)
             self.tran_boundary_data = [train_data, self.boundary_data]
         
         if bc_batch_size is not None:

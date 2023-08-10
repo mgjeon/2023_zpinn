@@ -18,12 +18,15 @@ class PrepareHMI:
         os.makedirs(self.base_path, exist_ok=True)
         self.hmi_path = hmi_path
     
-    def load_hmi_data(self):
+    def load_hmi_data(self, idx1=None, idx2=None):
         hmi_p_files = sorted(glob.glob(os.path.join(self.hmi_path, '*Bp.fits'))) 
         hmi_t_files = sorted(glob.glob(os.path.join(self.hmi_path, '*Bt.fits')))  
         hmi_r_files = sorted(glob.glob(os.path.join(self.hmi_path, '*Br.fits')))  
 
-        self.data_paths = list(zip(hmi_p_files, hmi_t_files, hmi_r_files))
+        if (idx1 is None) or (idx2 is None):
+            self.data_paths = list(zip(hmi_p_files, hmi_t_files, hmi_r_files))
+        else:
+            self.data_paths = list(zip(hmi_p_files, hmi_t_files, hmi_r_files))[idx1:idx2]
         return self.data_paths
 
     def plot_hmi(self, idx):
