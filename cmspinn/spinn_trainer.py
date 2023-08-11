@@ -142,13 +142,13 @@ def generate_train_data_random(key, nx, ny, nz, n_max_x, n_max_y, n_max_z, nc, n
 
     if (ncx is not None) and (ncy is not None) and (ncz is not None):
       xc = jax.random.uniform(keys[1], (ncx, 1), minval=0., maxval=n_max_x)
-      yc = jax.random.uniform(keys[2], (ncy, 1), minval=0., maxval=n_max_x)
-      zc = jax.random.uniform(keys[3], (ncz, 1), minval=0., maxval=n_max_x)
+      yc = jax.random.uniform(keys[2], (ncy, 1), minval=0., maxval=n_max_y)
+      zc = jax.random.uniform(keys[3], (ncz, 1), minval=0., maxval=n_max_z)
     
     elif choice is False:
       xc = jax.random.uniform(keys[1], (nc, 1), minval=0., maxval=n_max_x)
-      yc = jax.random.uniform(keys[2], (nc, 1), minval=0., maxval=n_max_x)
-      zc = jax.random.uniform(keys[3], (nc, 1), minval=0., maxval=n_max_x)
+      yc = jax.random.uniform(keys[2], (nc, 1), minval=0., maxval=n_max_y)
+      zc = jax.random.uniform(keys[3], (nc, 1), minval=0., maxval=n_max_z)
     else:
       xc = jnp.linspace(0, n_max_x, nx).reshape(-1, 1)
       yc = jnp.linspace(0, n_max_y, ny).reshape(-1, 1)
