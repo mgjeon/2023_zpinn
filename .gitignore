@@ -151,3 +151,5 @@ checklink/cookies.txt
 
 # Quarto
 .quarto
+
+**/wandb/*
