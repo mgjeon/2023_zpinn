@@ -296,7 +296,7 @@ def apply_model_spinn(apply_fn, params, train_boundary_data, w_ff, w_div, w_bc):
 
         loss = w_ff*loss_ff + w_div*loss_div
 
-        return loss
+        return loss, loss_ff, loss_div
 
     def boundary_loss(params, x, y, z, *boundary_data):
         
@@ -388,11 +388,14 @@ def apply_model_spinn(apply_fn, params, train_boundary_data, w_ff, w_div, w_bc):
     xc, yc, zc, xb, yb, zb = train_data
 
     # isolate loss func from redundant arguments
-    loss_fn = lambda params: residual_loss(params, xc, yc, zc, w_ff, w_div) + w_bc*boundary_loss(params, xb, yb, zb, *boundary_data)
+    loss_pde, loss_ff, loss_div = residual_loss(params, xc, yc, zc, w_ff, w_div)
+    loss_bc = boundary_loss(params, xb, yb, zb, *boundary_data)
+
+    loss_fn = lambda params: residual_loss(params, xc, yc, zc, w_ff, w_div)[0] + w_bc*boundary_loss(params, xb, yb, zb, *boundary_data)
 
     loss, gradient = jax.value_and_grad(loss_fn)(params)
 
-    return loss, gradient
+    return loss, gradient, [loss_ff, loss_div, loss_bc]
 
 # %%
 @partial(jax.jit, static_argnums=(0,6))
@@ -673,7 +676,7 @@ class SPINN_series_Trainer:
         pos_enc = parameters['pos_enc']
         mlp = parameters['mlp']
         lr = parameters['lr']
-        lr_decay_iterations = parameters['lr_decay_iterations']
+        lr_decay_iterations = parameters['lr_decay_iterations'][0]
         n_max_x = parameters['n_max_x']
         n_max_y = parameters['n_max_y']
         n_max_z = parameters['n_max_z']
@@ -775,10 +778,10 @@ class SPINN_series_Trainer:
             w_ff = parameters['w_ff']
             w_div = parameters['w_div']
             w_bc = parameters['w_bc']
-            w_bc_decay_iterations = parameters['w_bc_decay_iterations']
+            w_bc_decay_iterations = parameters['w_bc_decay_iterations'][0]
             w_bc_decay = (1 / w_bc) ** (1 / w_bc_decay_iterations) if w_bc_decay_iterations is not None else 1
 
-            bc_batch_size = parameters['bc_batch_size']
+            bc_batch_size = parameters['bc_batch_size'][0]
 
             start = time.time()
             if bc_batch_size is not None:
@@ -855,7 +858,7 @@ class SPINN_series_Trainer:
         lr = parameters['lr']
         series_lr = parameters['series_lr']
         series_lr_decay_iterations = parameters['series_lr_decay_iterations']
-        lr_decay_iterations = parameters['lr_decay_iterations']
+        lr_decay_iterations = parameters['lr_decay_iterations'][0]
         n_max_x = parameters['n_max_x']
         n_max_y = parameters['n_max_y']
         n_max_z = parameters['n_max_z']
@@ -865,11 +868,11 @@ class SPINN_series_Trainer:
         w_ff = parameters['w_ff']
         w_div = parameters['w_div']
         w_bc = parameters['w_bc']
-        w_bc_decay_iterations = parameters['w_bc_decay_iterations']
+        w_bc_decay_iterations = parameters['w_bc_decay_iterations'][0]
         potential_boundary_batch_size = parameters['potential_boundary_batch_size']
         w_bc_decay = (1 / w_bc) ** (1 / w_bc_decay_iterations) if w_bc_decay_iterations is not None else 1
 
-        bc_batch_size = parameters['bc_batch_size']
+        bc_batch_size = parameters['bc_batch_size'][0]
 
         b_bottom_list = self.b_bottom_list
 
@@ -1107,7 +1110,8 @@ import wandb
 wandb.login()
 
 # %%
-base_path = os.path.expanduser('~/workspace/workspace_mine/_data/NOAA12673/')
+# base_path = os.path.expanduser('~/workspace/workspace_mine/_data/NOAA12673/')
+base_path = os.path.expanduser('~/workspace/workspace_mine/_data/NOAA11158/')
 
 result_path = os.path.join(base_path, 'result')
 os.makedirs(result_path, exist_ok=True)
@@ -1116,118 +1120,6 @@ b_bottom_path = os.path.join(base_path, 'b_bottom')
 
 b_bottom_list = sorted(glob.glob(os.path.join(b_bottom_path, '*.npy')))
 b_bottom_list
-
-# %%
-# Nz = 160
-
-# b_norm = 2500
-# total_iterations = 10000
-# log_interval = 1000
-# loss_threshold = 1e-3
-
-# series_iterations = 200
-# series_log_interval = 20
-# series_lr = 5e-5
-# series_lr_decay_iterations = series_iterations
-
-# with open(b_bottom_list[0], 'rb') as f:
-#     b_bottom = np.load(f)
-
-# Nx, Ny, _ = b_bottom.shape
-
-# features = 256
-# n_layers = 3
-# r = 256
-# mlp = 'modified_mlp'
-
-# out_dim = 3 
-# lr = 5e-5
-# lr_decay_iterations = total_iterations
-# decay_rate = 0.98
-
-# pos_enc = 0
-
-# spatial_norm = 160
-# n_max_x = (Nx/spatial_norm)
-# n_max_y = (Ny/spatial_norm)
-# n_max_z = (Nz/spatial_norm)
-
-# w_ff = 0.1
-# w_div = 1
-
-# w_bc = 1
-# w_bc_decay_iterations = None
-
-# is_random = True
-# Nc = 32
-# random_interval = 1
-# Ncx = None
-# Ncy = None
-# Ncz = None
-
-# bc_batch_size = 10000
-
-# choice = True
-
-# potential_boundary_batch_size = 3000
-
-# parameters = {'features' : features, 
-#     'n_layers' : n_layers, 
-#     'r' : r, 
-#     'out_dim' : out_dim, 
-#     'Nx' : Nx, 
-#     'Ny' : Ny, 
-#     'Nz' : Nz, 
-#     'b_norm' : b_norm,
-#     'pos_enc' : pos_enc,
-#     'mlp' : mlp,
-#     'lr': lr,
-#     'series_lr': series_lr,
-#     'series_lr_decay_iterations': series_lr_decay_iterations,
-#     'lr_decay_iterations': lr_decay_iterations,
-#     'n_max_x': n_max_x,
-#     'n_max_y': n_max_y,
-#     'n_max_z': n_max_z,
-#     'is_random':is_random,
-#     'Nc':Nc,
-#     'random_interval':random_interval,
-#     'w_ff': w_ff,
-#     'w_div': w_div,
-#     'w_bc': w_bc,
-#     'w_bc_decay_iterations': w_bc_decay_iterations,
-#     'Ncx': Ncx,
-#     'Ncy': Ncy,
-#     'Ncz': Ncz,
-#     'bc_batch_size': bc_batch_size,
-#     'choice': choice,
-#     'decay_rate': decay_rate,
-#     'total_iterations': total_iterations,
-#     'log_interval': log_interval,
-#     'series_iterations': series_iterations,
-#     'series_log_interval': series_log_interval,
-#     'loss_threshold': loss_threshold,
-#     'potential_boundary_batch_size': potential_boundary_batch_size}
-
-# wandb.init(
-#       project="basic-intro",
-#       config=parameters
-# )
-
-# %%
-# wandb.init(
-#       project="basic-intro",
-#       config=parameters
-# )
-
-# %%
-# trainer = SPINN_series_Trainer(result_path, wandb, single=True)
-# trainer.setup(b_bottom_list)
-
-# %%
-# trainer.train()
-
-# %%
-# wandb.finish()
 
 # %%
 sweep_config = {
@@ -1415,19 +1307,13 @@ potential_boundary_batch_size = 3000
 
 parameters = {
     'features' : {
-        'distribution': 'int_uniform',
-        'min': 64,
-        'max': 256
+        'value': 256
     }, 
     'n_layers' : {
-        'distribution': 'int_uniform',
-        'min': 3,
-        'max': 8
+        'value': 3
     }, 
     'r' : {
-        'distribution': 'int_uniform',
-        'min': 64,
-        'max': 512
+        'value': 256
     }, 
     'out_dim' : {
         'value': out_dim
@@ -1448,7 +1334,7 @@ parameters = {
         'value': pos_enc
     },
     'mlp' : {
-        'values': ['mlp', 'modified_mlp']
+        'value': 'modified_mlp'
     },
     # 'mlp' : {
     #     'value': 'modified_mlp'
@@ -1457,9 +1343,7 @@ parameters = {
         'values': ['tanh', 'sin']
     },
     'lr': {
-        'distribution': 'uniform',
-        'min': 1e-5,
-        'max': 1e-3
+        'value': 5e-4
     },
     'series_lr': {
         'value': series_lr
@@ -1468,7 +1352,7 @@ parameters = {
         'value': series_lr_decay_iterations
     },
     'lr_decay_iterations': {
-        'values': [None, lr_decay_iterations//2, lr_decay_iterations]
+        'value': [lr_decay_iterations]
     },
     # 'n_max_x': {
     #     'value': n_max_x
@@ -1480,22 +1364,16 @@ parameters = {
     #     'value': n_max_z
     # },
     'n_max_x': {
-        'distribution': 'uniform',
-        'min': 1,
-        'max': 2*n_max_x
+        'value': n_max_x
     },
     'n_max_y': {
-        'distribution': 'uniform',
-        'min': 1,
-        'max': 2*n_max_y
+        'value': n_max_y
     },
     'n_max_z': {
-        'distribution': 'uniform',
-        'min': 1,
-        'max': 2*n_max_z
+        'value': n_max_z
     },
     'is_random':{
-        'value': True
+        'value': False
     },
     # 'NcxNcyNcz': {
     #     'values': [[None,None,None], [Nx//2, Ny//2, Nz//2], [Nx, Ny, Nz]]
@@ -1510,33 +1388,25 @@ parameters = {
         'value': 1
     },
     'w_ff': {
-        'distribution': 'uniform',
-        'min': 1e-4,
-        'max': 1e3
+        'values': [0.01, 0.1, 1, 10, 100]
     },
     'w_div': {
-        'distribution': 'uniform',
-        'min': 1e-4,
-        'max': 1e3
+        'values': [0.01, 0.1, 1, 10, 100]
     },
     'w_bc': {
-        'distribution': 'uniform',
-        'min': 1e-4,
-        'max': 1e3
+        'values': [0.01, 0.1, 1, 10, 100]
     },
     'w_bc_decay_iterations': {
-        'values': [None, total_iterations, 2*total_iterations, 3*total_iterations]
+        'value': [None]
     },
     'bc_batch_size': {
-        'value': 10000
+        'value': [None]
     },
     'choice': {
-        'values': [True, False]
+        'value': True
     },
     'decay_rate': {
-        'distribution': 'uniform',
-        'min': 0.5,
-        'max': 1
+        'value': 0.98
     },
     'total_iterations': {
         'value': total_iterations
@@ -1572,6 +1442,7 @@ b_bottom_date = os.path.basename(b_bottom_path)[9:-4]
 b_potential_path = os.path.join(base_path, 'b_potential')
 b_pot_vtk_path = os.path.join(b_potential_path, f'b_potential_{b_bottom_date}.vtk')
 b_pot_me_path = os.path.join(os.path.join(result_path, b_bottom_date), f'b_me_{b_bottom_date}.npy')
+os.makedirs(os.path.join(result_path, b_bottom_date), exist_ok=True)
 
 if os.path.exists(b_pot_me_path):
     pot_me = np.load(b_pot_me_path)
@@ -1585,7 +1456,7 @@ else:
     np.save(b_pot_me_path, pot_me)
 
 # %%
-sweep_id = wandb.sweep(sweep_config, project="spinn-sweeps")
+sweep_id = wandb.sweep(sweep_config, project="spinns")
 
 # %%
 def ttt(config=None):
