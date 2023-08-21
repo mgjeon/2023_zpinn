@@ -710,6 +710,7 @@ class SPINN_series_Trainer:
             if not os.path.exists(BC_path):
                 Nz = parameters['Nz']
                 b_norm = parameters['b_norm']
+                potential_boundary_batch_size = parameters['potential_boundary_batch_size']
                 cal_and_save_potential_boundary_for_spinn(b_bottom, Nz, b_norm, BC_path, potential_boundary_batch_size)  
 
             with open(BC_path, 'rb') as f:
