@@ -842,7 +842,7 @@ class SPINN_series_Trainer:
         series_total_iterations = parameters['series_iterations']
         series_log_iterations = parameters['series_log_interval']
 
-        loss_threshold = parameters['loss_threshold']
+        # loss_threshold = parameters['loss_threshold']
         random_interval = parameters['random_interval']
         features = parameters['features']
         n_layers = parameters['n_layers']
@@ -906,12 +906,12 @@ class SPINN_series_Trainer:
                 # losses.append(loss.item())
                 loss_ff, loss_div, loss_bc = losses
                 self.wandb.log({"train": {"loss":loss.item(), "loss_ff":loss_ff.item(), "loss_div":loss_div.item(), "loss_bc":loss_bc.item(), "w_ff*loss_ff":w_ff*loss_ff.item(), "w_div*loss_div":w_div*loss_div.item(), "w_bc*loss_bc":w_bc*loss_bc.item()}})
-                if loss.item() < loss_threshold:
-                    if logger is None:
-                        print(f'Epoch: {e}/{total_iterations} --> loss: {loss:.8f} < {loss_threshold}')
-                    else:
-                        logger.info(f'Epoch: {e}/{total_iterations} --> loss: {loss:.8f} < {loss_threshold}')
-                    break
+                # if loss.item() < loss_threshold:
+                #     if logger is None:
+                #         print(f'Epoch: {e}/{total_iterations} --> loss: {loss:.8f} < {loss_threshold}')
+                #     else:
+                #         logger.info(f'Epoch: {e}/{total_iterations} --> loss: {loss:.8f} < {loss_threshold}')
+                #     break
                 
                 params, state = update_model(self.optim, gradient, params, state)
                 
@@ -1003,12 +1003,12 @@ class SPINN_series_Trainer:
                     # losses.append(loss.item())
                     loss_ff, loss_div, loss_bc = losses
                     self.wandb.log({"train": {"loss":loss.item(), "loss_ff":loss_ff.item(), "loss_div":loss_div.item(), "loss_bc":loss_bc.item(), "w_ff*loss_ff":w_ff*loss_bc.item(), "w_div*loss_div":w_div*loss_bc.item(), "w_bc*loss_bc":w_bc*loss_bc.item()}})
-                    if loss.item() < loss_threshold:
-                        if logger is None:
-                            print(f'Epoch: {e}/{series_total_iterations} --> loss: {loss:.8f} < {loss_threshold}')
-                        else:
-                            logger.info(f'Epoch: {e}/{series_total_iterations} --> loss: {loss:.8f} < {loss_threshold}')
-                        break
+                    # if loss.item() < loss_threshold:
+                    #     if logger is None:
+                    #         print(f'Epoch: {e}/{series_total_iterations} --> loss: {loss:.8f} < {loss_threshold}')
+                    #     else:
+                    #         logger.info(f'Epoch: {e}/{series_total_iterations} --> loss: {loss:.8f} < {loss_threshold}')
+                    #     break
                     
                     params, state = update_model(optim, gradient, params, state)
                     
@@ -1142,7 +1142,7 @@ Nz = 160
 b_norm = 2500
 total_iterations = 10000
 log_interval = 1000
-loss_threshold = 1e-3
+# loss_threshold = 1e-3
 
 series_iterations = 200
 series_log_interval = 20
@@ -1164,145 +1164,6 @@ n_max_z = (Nz/spatial_norm)
 # Ncz = None
 
 potential_boundary_batch_size = 3000
-
-# parameters = {
-#     'features' : {
-#         'distribution': 'int_uniform',
-#         'min': 128,
-#         'max': 512
-#     }, 
-#     'n_layers' : {
-#         'distribution': 'int_uniform',
-#         'min': 3,
-#         'max': 8
-#     }, 
-#     'r' : {
-#         'distribution': 'int_uniform',
-#         'min': 128,
-#         'max': 512
-#     }, 
-#     'out_dim' : {
-#         'value': out_dim
-#     }, 
-#     'Nx' : {
-#         'value': Nx
-#     }, 
-#     'Ny' : {
-#         'value': Ny
-#     }, 
-#     'Nz' : {
-#         'value': Nz
-#     }, 
-#     'b_norm' : {
-#         'value': b_norm
-#     },
-#     'pos_enc' : {
-#         'value': pos_enc
-#     },
-#     'mlp' : {
-#         'values': ['mlp', 'modified_mlp']
-#     },
-#     'lr': {
-#         'distribution': 'uniform',
-#         'min': 1e-5,
-#         'max': 1e-3
-#     },
-#     'series_lr': {
-#         'value': series_lr
-#     },
-#     'series_lr_decay_iterations': {
-#         'value': series_lr_decay_iterations
-#     },
-#     'lr_decay_iterations': {
-#         'values': [None, lr_decay_iterations//2, lr_decay_iterations]
-#     },
-#     'n_max_x': {
-#         'distribution': 'uniform',
-#         'min': 1,
-#         'max': 4*n_max_x
-#     },
-#     'n_max_y': {
-#         'distribution': 'uniform',
-#         'min': 1,
-#         'max': 4*n_max_y
-#     },
-#     'n_max_z': {
-#         'distribution': 'uniform',
-#         'min': 1,
-#         'max': 4*n_max_z
-#     },
-#     'is_random':{
-#         'values': [True, False]
-#     },
-#     'Nc':{
-#         'distribution': 'int_uniform',
-#         'min': 16,
-#         'max': max(Nx, Ny, Nz)
-#     },
-#     'random_interval':{
-#         'distribution': 'int_uniform',
-#         'min': 1,
-#         'max': 1000
-#     },
-#     'w_ff': {
-#         'distribution': 'uniform',
-#         'min': 1e-4,
-#         'max': 1e3
-#     },
-#     'w_div': {
-#         'distribution': 'uniform',
-#         'min': 1e-4,
-#         'max': 1e3
-#     },
-#     'w_bc': {
-#         'distribution': 'uniform',
-#         'min': 1e-4,
-#         'max': 1e3
-#     },
-#     'w_bc_decay_iterations': {
-#         'values': [None, total_iterations, 2*total_iterations, 3*total_iterations]
-#     },
-#     'Ncx': {
-#         'value': Ncx
-#     },
-#     'Ncy': {
-#         'value': Ncy
-#     },
-#     'Ncz': {
-#         'value': Ncz
-#     },
-#     'bc_batch_size': {
-#         'distribution': 'int_uniform',
-#         'min': 10000,
-#         'max': 50000
-#     },
-#     'choice': {
-#         'values': [True, False]
-#     },
-#     'decay_rate': {
-#         'distribution': 'uniform',
-#         'min': 0.5,
-#         'max': 1
-#     },
-#     'total_iterations': {
-#         'value': total_iterations
-#     },
-#     'log_interval': {
-#         'value': log_interval
-#     },
-#     'series_iterations': {
-#         'value': series_iterations
-#     },
-#     'series_log_interval': {
-#         'value': series_log_interval
-#     },
-#     'loss_threshold': {
-#         'value': loss_threshold
-#     },
-#     'potential_boundary_batch_size': {
-#         'value': potential_boundary_batch_size
-#     }
-# }
 
 
 parameters = {
@@ -1420,9 +1281,9 @@ parameters = {
     'series_log_interval': {
         'value': series_log_interval
     },
-    'loss_threshold': {
-        'value': loss_threshold
-    },
+    # 'loss_threshold': {
+    #     'value': loss_threshold
+    # },
     'potential_boundary_batch_size': {
         'value': potential_boundary_batch_size
     }
