@@ -8,7 +8,7 @@ setproctitle("SPINN")
 import os
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= "3"
+os.environ["CUDA_VISIBLE_DEVICES"]= "2"
 
 # %%
 import jax 
@@ -1126,8 +1126,8 @@ import wandb
 wandb.login()
 
 # %%
-# base_path = os.path.expanduser('~/workspace/workspace_mine/_data/NOAA12673/')
-base_path = os.path.expanduser('~/workspace/workspace_mine/_data/NOAA11158/')
+base_path = os.path.expanduser('~/workspace/workspace_mine/_data/NOAA12673/')
+# base_path = os.path.expanduser('~/workspace/workspace_mine/_data/NOAA11158/')
 
 result_path = os.path.join(base_path, 'result')
 os.makedirs(result_path, exist_ok=True)

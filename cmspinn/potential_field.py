@@ -169,12 +169,16 @@ def _compute_fields(coords, cube_shape, b_n, batch_size=2048, progress=False):
 
 # %% ../nbs/08_Potential_Field.ipynb 31
 import pickle
+from astropy.nddata import block_reduce
 
 # %% ../nbs/08_Potential_Field.ipynb 32
-def cal_and_save_potential_boundary_for_spinn(b_bottom, Nz, b_norm, boundary_path, batch_size=2048):
+def cal_and_save_potential_boundary_for_spinn(b_bottom, Nz, b_norm, boundary_path, batch_size=2048, reduce=4):
     bz_bottom = b_bottom[:, :, 2]
 
-    coords, fields = get_potential_boundary(b_bottom[:, :, 2], Nz, batch_size=batch_size)
+    if reduce > 1:
+        bz_bottom = block_reduce(bz_bottom, reduce, func=np.mean)
+
+    coords, fields = get_potential_boundary(bz_bottom, Nz, batch_size=batch_size)
 
     #0 z=0   bottom
     #1 z=2   top                  
