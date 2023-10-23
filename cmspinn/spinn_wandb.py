@@ -166,16 +166,16 @@ def generate_train_data(nx, ny, nz, n_max_x, n_max_y, n_max_z):
 
     # # boundary points
     xb = [jnp.linspace(0, n_max_x, nx).reshape(-1, 1), # z=0   bottom
-          jnp.linspace(0, n_max_x, nx).reshape(-1, 1), # z=2   top
+          jnp.linspace(0, n_max_x, nx//4).reshape(-1, 1), # z=2   top
           jnp.array([[0.]]),                     # x=0   lateral_1
           jnp.array([[n_max_x]]),                     # x=2   lateral_2
-          jnp.linspace(0, n_max_x, nx).reshape(-1, 1), # y=0   lateral_3
-          jnp.linspace(0, n_max_x, nx).reshape(-1, 1)] # y=2   lateral_4
+          jnp.linspace(0, n_max_x, nx//4).reshape(-1, 1), # y=0   lateral_3
+          jnp.linspace(0, n_max_x, nx//4).reshape(-1, 1)] # y=2   lateral_4
 
     yb = [jnp.linspace(0, n_max_y, ny).reshape(-1, 1), 
-          jnp.linspace(0, n_max_y, ny).reshape(-1, 1), 
-          jnp.linspace(0, n_max_y, ny).reshape(-1, 1), 
-          jnp.linspace(0, n_max_y, ny).reshape(-1, 1), 
+          jnp.linspace(0, n_max_y, ny//4).reshape(-1, 1), 
+          jnp.linspace(0, n_max_y, ny//4).reshape(-1, 1), 
+          jnp.linspace(0, n_max_y, ny//4).reshape(-1, 1), 
           jnp.array([[0.]]), 
           jnp.array([[n_max_y]])]
 
@@ -242,6 +242,10 @@ def apply_model_spinn(apply_fn, params, train_boundary_data, w_ff, w_div, w_bc):
         # calculate u
         Bx, By, Bz = apply_fn(params, x, y, z)
         B = jnp.stack([Bx, By, Bz], axis=-1)
+
+        # loss_energy = jnp.sum(B**2, axis=-1)
+        # loss_energy = jnp.mean(loss_energy)
+        # loss_energy = 1/loss_energy
         
         # calculate J
         Jx = curlx(apply_fn, params, x, y, z)
@@ -288,6 +292,7 @@ def apply_model_spinn(apply_fn, params, train_boundary_data, w_ff, w_div, w_bc):
         loss_div = jnp.mean((divB)**2)
         #-----------------------------------------------------------
 
+        # loss = w_ff*loss_ff + w_div*loss_div + loss_energy
         loss = w_ff*loss_ff + w_div*loss_div
 
         return loss, loss_ff, loss_div
@@ -319,12 +324,12 @@ def apply_model_spinn(apply_fn, params, train_boundary_data, w_ff, w_div, w_bc):
         #4 y=0   lateral_3            
         #5 y=2   lateral_4            
 
-        b_bottom, bp_top, bp_lateral_1, bp_lateral_2, bp_lateral_3, bp_lateral_4 = boundary_data
+        # b_bottom, bp_top, bp_lateral_1, bp_lateral_2, bp_lateral_3, bp_lateral_4 = boundary_data
         
-        loss = 0.
-        Bx, By, Bz = apply_fn(params,  x[0], y[0], z[0])
-        Bx, By, Bz = jnp.squeeze(Bx), jnp.squeeze(By), jnp.squeeze(Bz)
-        loss += (1/6)*jnp.mean((Bx - b_bottom[:, :, 0])**2) + jnp.mean((By - b_bottom[:, :, 1])**2) + jnp.mean((Bz - b_bottom[:, :, 2])**2)
+        # loss = 0.
+        # Bx, By, Bz = apply_fn(params,  x[0], y[0], z[0])
+        # Bx, By, Bz = jnp.squeeze(Bx), jnp.squeeze(By), jnp.squeeze(Bz)
+        # loss += jnp.mean((Bx - b_bottom[:, :, 0])**2) + jnp.mean((By - b_bottom[:, :, 1])**2) + jnp.mean((Bz - b_bottom[:, :, 2])**2)
 
         #0 z=0   bottom
         #1 z=2   top                  -> Only normal(Bz), Bx=0, By=0
@@ -353,27 +358,64 @@ def apply_model_spinn(apply_fn, params, train_boundary_data, w_ff, w_div, w_bc):
         # Bx, By, Bz = jnp.squeeze(Bx), jnp.squeeze(By), jnp.squeeze(Bz)
         # loss += jnp.mean(By**2)
 
+        # Bx, By, Bz = apply_fn(params,  x[1], y[1], z[1])
+        # Bx, By, Bz = jnp.squeeze(Bx), jnp.squeeze(By), jnp.squeeze(Bz)
+        # loss += jnp.mean((Bx - bp_top[:, :, 0])**2) + jnp.mean((By - bp_top[:, :, 1])**2) + jnp.mean((Bz - bp_top[:, :, 2])**2)
+
+        # Bx, By, Bz = apply_fn(params,  x[2], y[2], z[2])
+        # Bx, By, Bz = jnp.squeeze(Bx), jnp.squeeze(By), jnp.squeeze(Bz)
+        # loss += jnp.mean((Bx - bp_lateral_1[:, :, 0])**2) + jnp.mean((By - bp_lateral_1[:, :, 1])**2) + jnp.mean((Bz - bp_lateral_1[:, :, 2])**2)
+
+        # Bx, By, Bz = apply_fn(params,  x[3], y[3], z[3])
+        # Bx, By, Bz = jnp.squeeze(Bx), jnp.squeeze(By), jnp.squeeze(Bz)
+        # loss += jnp.mean((Bx - bp_lateral_2[:, :, 0])**2) + jnp.mean((By - bp_lateral_2[:, :, 1])**2) + jnp.mean((Bz - bp_lateral_2[:, :, 2])**2)
+
+        # Bx, By, Bz = apply_fn(params,  x[4], y[4], z[4])
+        # Bx, By, Bz = jnp.squeeze(Bx), jnp.squeeze(By), jnp.squeeze(Bz)
+        # loss += jnp.mean((Bx - bp_lateral_3[:, :, 0])**2) + jnp.mean((By - bp_lateral_3[:, :, 1])**2) + jnp.mean((Bz - bp_lateral_3[:, :, 2])**2)
+
+        # Bx, By, Bz = apply_fn(params,  x[5], y[5], z[5])
+        # Bx, By, Bz = jnp.squeeze(Bx), jnp.squeeze(By), jnp.squeeze(Bz)
+        # loss += jnp.mean((Bx - bp_lateral_4[:, :, 0])**2) + jnp.mean((By - bp_lateral_4[:, :, 1])**2) + jnp.mean((Bz - bp_lateral_4[:, :, 2])**2)
+
+
+        b_bottom, bp_top, bp_lateral_1, bp_lateral_2, bp_lateral_3, bp_lateral_4, b_bottom_err = boundary_data
+        
+        loss = 0.
+        Bx, By, Bz = apply_fn(params,  x[0], y[0], z[0])
+        Bx, By, Bz = jnp.squeeze(Bx), jnp.squeeze(By), jnp.squeeze(Bz)
+
+        Bx_diff =jnp.clip(jnp.abs(Bx - b_bottom[:, :, 0])-b_bottom_err[:, :, 0], 0)
+        Bx_diff = jnp.mean(jnp.nansum(Bx_diff**2, -1))
+
+        By_diff =jnp.clip(jnp.abs(By - b_bottom[:, :, 1])-b_bottom_err[:, :, 1], 0)
+        By_diff = jnp.mean(jnp.nansum(By_diff**2, -1))
+
+        Bz_diff =jnp.clip(jnp.abs(Bz - b_bottom[:, :, 2])-b_bottom_err[:, :, 2], 0)
+        Bz_diff = jnp.mean(jnp.nansum(Bz_diff**2, -1))
+ 
+        loss += Bx_diff + By_diff + Bz_diff
+
         Bx, By, Bz = apply_fn(params,  x[1], y[1], z[1])
         Bx, By, Bz = jnp.squeeze(Bx), jnp.squeeze(By), jnp.squeeze(Bz)
-        loss += (1/6)*jnp.mean((Bx - bp_top[:, :, 0])**2) + jnp.mean((By - bp_top[:, :, 1])**2) + jnp.mean((Bz - bp_top[:, :, 2])**2)
+        loss += jnp.mean((Bx - bp_top[:, :, 0])**2) + jnp.mean((By - bp_top[:, :, 1])**2) + jnp.mean((Bz - bp_top[:, :, 2])**2)
 
         Bx, By, Bz = apply_fn(params,  x[2], y[2], z[2])
         Bx, By, Bz = jnp.squeeze(Bx), jnp.squeeze(By), jnp.squeeze(Bz)
-        loss += (1/6)*jnp.mean((Bx - bp_lateral_1[:, :, 0])**2) + jnp.mean((By - bp_lateral_1[:, :, 1])**2) + jnp.mean((Bz - bp_lateral_1[:, :, 2])**2)
+        loss += jnp.mean((Bx - bp_lateral_1[:, :, 0])**2) + jnp.mean((By - bp_lateral_1[:, :, 1])**2) + jnp.mean((Bz - bp_lateral_1[:, :, 2])**2)
 
         Bx, By, Bz = apply_fn(params,  x[3], y[3], z[3])
         Bx, By, Bz = jnp.squeeze(Bx), jnp.squeeze(By), jnp.squeeze(Bz)
-        loss += (1/6)*jnp.mean((Bx - bp_lateral_2[:, :, 0])**2) + jnp.mean((By - bp_lateral_2[:, :, 1])**2) + jnp.mean((Bz - bp_lateral_2[:, :, 2])**2)
+        loss += jnp.mean((Bx - bp_lateral_2[:, :, 0])**2) + jnp.mean((By - bp_lateral_2[:, :, 1])**2) + jnp.mean((Bz - bp_lateral_2[:, :, 2])**2)
 
         Bx, By, Bz = apply_fn(params,  x[4], y[4], z[4])
         Bx, By, Bz = jnp.squeeze(Bx), jnp.squeeze(By), jnp.squeeze(Bz)
-        loss += (1/6)*jnp.mean((Bx - bp_lateral_3[:, :, 0])**2) + jnp.mean((By - bp_lateral_3[:, :, 1])**2) + jnp.mean((Bz - bp_lateral_3[:, :, 2])**2)
+        loss += jnp.mean((Bx - bp_lateral_3[:, :, 0])**2) + jnp.mean((By - bp_lateral_3[:, :, 1])**2) + jnp.mean((Bz - bp_lateral_3[:, :, 2])**2)
 
         Bx, By, Bz = apply_fn(params,  x[5], y[5], z[5])
         Bx, By, Bz = jnp.squeeze(Bx), jnp.squeeze(By), jnp.squeeze(Bz)
-        loss += (1/6)*jnp.mean((Bx - bp_lateral_4[:, :, 0])**2) + jnp.mean((By - bp_lateral_4[:, :, 1])**2) + jnp.mean((Bz - bp_lateral_4[:, :, 2])**2)
+        loss += jnp.mean((Bx - bp_lateral_4[:, :, 0])**2) + jnp.mean((By - bp_lateral_4[:, :, 1])**2) + jnp.mean((Bz - bp_lateral_4[:, :, 2])**2)
 
-        
         return loss
 
     # unpack data
@@ -398,6 +440,10 @@ def apply_model_spinn_random(apply_fn, params, train_boundary_data, w_ff, w_div,
         # calculate u
         Bx, By, Bz = apply_fn(params, x, y, z)
         B = jnp.stack([Bx, By, Bz], axis=-1)
+
+        # loss_energy = jnp.sum(B**2, axis=-1)
+        # loss_energy = jnp.mean(loss_energy)
+        # loss_energy = 1/loss_energy
         
         # calculate J
         Jx = curlx(apply_fn, params, x, y, z)
